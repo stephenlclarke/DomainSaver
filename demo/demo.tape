@@ -14,9 +14,11 @@
 Output demo/demo.gif
 
 Set Shell bash
-Set FontSize 20
-Set Width 1240
-Set Height 760
+Set FontSize 18
+# quote.sh's table is ~115 columns. Narrower than this and the NOTES column
+# wraps, which is exactly the row a viewer needs to read in one glance.
+Set Width 1500
+Set Height 720
 Set Padding 24
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 45ms

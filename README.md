@@ -3,6 +3,11 @@
 Large-scale domain availability and price lookups in portable bash — that refuse to
 call a name "available" without a real price quote.
 
+![DomainSaver: shed.link looks unregistered, and is quoted at $819.27/yr against a $7.72 list price](demo/demo.gif)
+
+*Regenerate with `vhs demo/demo.tape`. Nothing in it is staged — those are live
+registry and registrar responses.*
+
 ## Why this exists
 
 **Availability is not purchasability.**

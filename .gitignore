@@ -96,7 +96,3 @@ Thumbs.db
 desktop.ini
 .idea/
 .vscode/
-
-# Rendered demo — regenerate with: vhs demo/demo.tape
-# (needs PORKBUN_API_KEY; commit the GIF once it shows the real reveal)
-demo/*.gif
