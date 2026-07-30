@@ -96,3 +96,6 @@ Thumbs.db
 desktop.ini
 .idea/
 .vscode/
+
+# Social video exports, derived from demo.gif (see demo/demo.tape)
+demo/*.mp4

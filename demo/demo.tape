@@ -18,14 +18,21 @@ Set FontSize 18
 # quote.sh's table is ~115 columns. Narrower than this and the NOTES column
 # wraps, which is exactly the row a viewer needs to read in one glance.
 Set Width 1500
-Set Height 720
+# Height is deliberately tight: each act is ~13 lines, and any spare rows
+# become dead space that dominates the frame once the GIF is letterboxed
+# into a square or 16:9 video for social.
+Set Height 480
 Set Padding 24
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 45ms
 Set PlaybackSpeed 1.0
 
+# No `cd`: vhs inherits the working directory, so render from the repo root
+# (`vhs demo/demo.tape`). Hard-coding a path both breaks for other people and
+# prints the renderer's home directory into a public asset, because check.sh
+# names the absolute path to quote.sh in its warning.
 Hide
-Type "cd ~/dev/DomainSaver && clear" Enter
+Type "clear" Enter
 Show
 
 Sleep 800ms
@@ -56,3 +63,17 @@ Type "# $819.27/yr. 106x the list price." Enter
 Sleep 2500ms
 Type "# github.com/jhammant/DomainSaver" Enter
 Sleep 3s
+
+# ---------------------------------------------------------------------------
+# Social exports (LinkedIn wants video, not GIF). Regenerate from demo.gif:
+#
+#   16:9 — ffmpeg -y -i demo/demo.gif -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+#            -vf "scale=1920:-2:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x1e1e2c,format=yuv420p" \
+#            -c:v libx264 -preset slow -crf 20 -r 30 -c:a aac -b:a 96k -shortest \
+#            -movflags +faststart demo/demo-16x9.mp4
+#
+#   1:1  — same, with scale=1080:-2 and pad=1080:1080
+#
+# The silent AAC track is deliberate: some platforms mishandle a video stream
+# with no audio stream at all. format=yuv420p and even dimensions are required
+# for H.264 to play everywhere.
