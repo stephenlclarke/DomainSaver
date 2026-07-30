@@ -30,8 +30,16 @@ jobs:
 
       # Every tracked *.sh - scripts/, tests/ and the top-level installer.
       # -x follows `. lib.sh`; -P scripts tells shellcheck where to find it.
+      #
+      # -S warning gates on error+warning and lets info-level style notes pass.
+      # Without it the runner's shellcheck version decides whether CI is green:
+      # 0.11 reports nothing here, while the apt build emits SC2317 ("command
+      # appears unreachable") for every trap handler and function called only
+      # indirectly, plus SC2015 for the deliberate `guard && check || die`
+      # idiom. Those are style opinions that vary between releases, not defects,
+      # so they must not make a green build depend on the runner image.
       - name: Lint shell scripts
-        run: git ls-files -z '*.sh' | xargs -0 shellcheck -x -P scripts
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -x -P scripts -S warning
 
   test:
     name: tests (offline)

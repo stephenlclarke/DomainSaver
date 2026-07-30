@@ -53,7 +53,7 @@ network section, behind the same env var — never in the offline group.
 Lint before pushing (CI runs the same command):
 
 ```bash
-shellcheck -x -P scripts scripts/*.sh tests/*.sh install.sh
+shellcheck -x -P scripts -S warning scripts/*.sh tests/*.sh install.sh
 ```
 
 ## House rules
@@ -74,7 +74,9 @@ shellcheck -x -P scripts scripts/*.sh tests/*.sh install.sh
 
 Keep them focused — one concern per PR. Before opening one:
 
-1. `shellcheck -x -P scripts scripts/*.sh tests/*.sh install.sh` is clean.
+1. `shellcheck -x -P scripts -S warning scripts/*.sh tests/*.sh install.sh` is clean.
+   (`-S warning` matches CI: info-level style notes such as SC2317 on trap
+   handlers vary between shellcheck releases and do not gate the build.)
 2. `tests/test.sh` passes, including the network group if you touched lookup code.
 3. New behaviour has a test; a bug fix has a test that fails without the fix.
 4. Docs updated if you changed a flag, an env var or a data file format.
