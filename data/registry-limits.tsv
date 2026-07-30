@@ -1,0 +1,100 @@
+# registry-limits.tsv - per-registry concurrency limits for scripts/sweep.sh
+#
+# THIS FILE IS HAND-MAINTAINED SEED DATA, NOT A GENERATED CACHE.
+# bootstrap.sh must never delete or overwrite it.
+#
+# WHY THIS EXISTS
+#   A domain sweep is bounded by the *slowest, angriest* registry, not by your
+#   CPU. Firing 32 parallel lookups at Identity Digital gets you 87 requests
+#   still hanging after ten minutes; firing the same 32 at Google's pubapi RDAP
+#   endpoint is completely fine. sweep.sh therefore groups work by registry
+#   endpoint and gives each group its own concurrency budget, so one aggressive
+#   registry throttles only its own group and can never stall the whole run.
+#
+# FORMAT   pattern <TAB> limit <TAB> optional note
+#   pattern     one of:
+#                 host                  exact hostname   (whois.nic.uk)
+#                 .suffix               any host ending in it (.registry.google)
+#                 *                     catch-all default
+#                 rdap:<any of above>   applies only to RDAP lookups
+#                 whois:<any of above>  applies only to whois lookups
+#   limit       max concurrent lookups against that registry (integer >= 1)
+#
+# PRECEDENCE (most specific wins, method-scoped breaks ties)
+#   exact host  >  longest .suffix  >  *          ... and within each of those,
+#   a "rdap:"/"whois:" scoped rule beats an unscoped one.
+#
+# The global -p/--parallel cap still applies on top: a group never gets more
+# slots than -p, and the sum of all active groups never exceeds -p.
+#
+# Check what a host resolves to with:
+#   scripts/sweep.sh --explain-limit whois.nic.uk whois
+#
+# Lines starting with '#' and blank lines are ignored. If this file is missing,
+# sweep.sh falls back to a small built-in table and says so loudly.
+
+# --- Google Registry -------------------------------------------------------
+# app dev foo how day soy page new zip mov meme ing boo esq prof phd rsvp
+# channel nexus. The IANA-advertised endpoint throttles hard; pubapi is
+# deliberately generous and is the one lib.sh routes to.
+pubapi.registry.google	12	generous public RDAP endpoint
+.registry.google	6	other Google Registry hosts: be conservative
+whois.nic.google	4
+
+# --- Verisign (com, net) ---------------------------------------------------
+# No premium tier, huge infrastructure, tolerant of parallel queries.
+rdap.verisign.com	10
+whois.verisign-grs.com	8
+rdap.markmonitor.com	4
+
+# --- Nominet (uk) ----------------------------------------------------------
+# Moderate. Nominet has no premium tier but does rate-limit whois per source IP.
+rdap.nominet.uk	4
+whois.nic.uk	4
+
+# --- Public Interest Registry (org) ----------------------------------------
+rdap.publicinterestregistry.org	6
+whois.publicinterestregistry.org	3	returns "WHOIS LIMIT EXCEEDED" when pushed
+
+# --- Identity Digital / Afilias / Donuts / Rightside -----------------------
+# The worst offenders by a wide margin: 87 RDAP lookups measured still hanging
+# after 10 minutes. lib.sh already routes these to whois; keep them at 1 so a
+# single .info-heavy list cannot consume the whole run.
+.identitydigital.services	1	measured: RDAP hangs under any parallelism
+.afilias.net	1
+.afilias.info	1
+.donuts.co	1
+.rightside.co	1
+whois.afilias.net	1
+whois.identitydigital.services	1
+
+# --- CentralNic / GoDaddy Registry / Radix ---------------------------------
+.centralnic.com	4
+.centralnicregistry.com	4
+.nic.gmo	3
+.radixregistry.net	3
+
+# --- ccTLD whois servers that bite -----------------------------------------
+# .co is whois.registry.co, NOT whois.nic.co (the usual wrong guess).
+whois.registry.co	2
+whois.nic.io	2
+whois.denic.de	2	DENIC blocks aggressive clients for hours
+whois.dk-hostmaster.dk	1
+whois.nic.im	1
+whois.iis.se	2
+whois.eu	2
+whois.nic.at	2
+whois.nic.ch	2
+whois.srs.net.nz	2
+
+# --- IANA ------------------------------------------------------------------
+# Only ever queried once per TLD to discover a whois server, and serially at
+# that; pinned to 1 so it can never be hammered.
+whois.iana.org	1
+
+# --- Defaults --------------------------------------------------------------
+# RDAP is an HTTP API built for automation; whois is a 1980s TCP service that
+# most registries protect with per-IP query counters. Default accordingly.
+rdap:*	6	default for any RDAP endpoint not listed above
+whois:*	2	default for any whois server not listed above
+*	4	last-resort default

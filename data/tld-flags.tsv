@@ -1,0 +1,34 @@
+# tld	FLAG [FLAG...]
+#
+# Extra reputation flags merged in by ds_tld_flags (lib.sh), which also
+# derives RENEWAL_TRAP / RENEWAL_EXPENSIVE from the price table and
+# already hard-codes the seeds below - they are repeated here as the
+# user-editable surface. Flags are de-duplicated, so repetition is free.
+# EDIT FREELY: bootstrap.sh never overwrites a row that already exists.
+bar	RENEWAL_TRAP
+bid	SPAM_ASSOCIATED
+click	SPAM_ASSOCIATED
+codes	RENEWAL_TRAP
+com	NO_PREMIUM_REGISTRY
+date	SPAM_ASSOCIATED
+download	SPAM_ASSOCIATED
+fun	RENEWAL_TRAP
+live	RENEWAL_TRAP
+loan	SPAM_ASSOCIATED
+lol	RENEWAL_TRAP
+men	SPAM_ASSOCIATED
+net	NO_PREMIUM_REGISTRY
+online	RENEWAL_TRAP
+org	NO_PREMIUM_REGISTRY
+party	SPAM_ASSOCIATED
+quest	SPAM_ASSOCIATED
+rest	RENEWAL_TRAP
+site	RENEWAL_TRAP
+space	RENEWAL_TRAP
+stream	SPAM_ASSOCIATED
+top	SPAM_ASSOCIATED
+trade	SPAM_ASSOCIATED
+uk	NO_PREMIUM_REGISTRY
+win	SPAM_ASSOCIATED
+works	RENEWAL_TRAP
+zone	RENEWAL_TRAP

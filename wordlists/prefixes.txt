@@ -1,0 +1,100 @@
+# prefixes.txt - short words that go IN FRONT of a name you already want.
+#
+# When the name you actually want is taken (and it is), the cheapest rescue is
+# a one-syllable prefix. "my", "get" and "try" are the three the startup world
+# wore out, so they are also the three most likely to be registered already -
+# they are near the top anyway because they are still the most natural to say.
+# The further down this list you go, the better your odds.
+#
+# Used with generate.sh:
+#   ./scripts/generate.sh --affix shed --prefixes wordlists/prefixes.txt --tlds com
+#   ./scripts/generate.sh --affix shed --prefixes wordlists/prefixes.txt \
+#       --suffixes wordlists/suffixes.txt --tlds dev --join -
+#
+# Format: one label per line, lowercase a-z 0-9 and hyphen. '#' starts a
+# comment, to end of line. No dots - these are labels, not domains.
+
+my
+the
+get
+try
+go
+use
+run
+make
+build
+ship
+keep
+hold
+find
+see
+read
+open
+new
+own
+one
+just
+only
+all
+any
+some
+more
+less
+half
+tiny
+mini
+micro
+little
+small
+big
+good
+real
+true
+plain
+quiet
+slow
+fast
+quick
+easy
+handy
+handmade
+home
+house
+back
+side
+under
+over
+inner
+outer
+near
+next
+this
+that
+here
+there
+now
+today
+daily
+weekly
+weekend
+evening
+night
+dawn
+lo
+hey
+yo
+oi            # British attention-getter; two letters, still says something
+we
+us
+our
+i
+im
+its
+lets
+please
+kindly
+mostly
+almost
+nearly
+barely
+hardly

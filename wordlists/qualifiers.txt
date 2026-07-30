@@ -1,0 +1,85 @@
+# qualifiers.txt - words that say "this is provisional".
+#
+# Designed to be glued onto a concrete noun (--compound) or onto a name you
+# already like (--affix). The point of a qualifier is to lower the promise:
+# proto-shed makes it obvious nothing here is load-bearing, which is both
+# honest and much better for finding an unregistered name, because the
+# qualifier+noun pair is far rarer than either half alone.
+#
+# Used with generate.sh:
+#   ./scripts/generate.sh --compound wordlists/qualifiers.txt wordlists/places.txt --tlds dev
+#   ./scripts/generate.sh --compound wordlists/qualifiers.txt wordlists/places.txt --tlds dev --join -
+#
+# Format: one label per line, lowercase a-z 0-9 and hyphen. '#' starts a
+# comment, to end of line. No dots - these are labels, not domains.
+
+proto
+beta
+scratch       # scratch space, scratch build, scratch that
+alpha
+draft
+rough
+raw
+spike
+pilot
+trial
+temp
+wip
+demo
+mock
+stub
+sketch
+seed
+sprout
+green
+fresh
+early
+new
+next
+quick
+rapid
+snap
+half
+part
+semi
+quasi
+near
+pseudo
+faux
+mini
+micro
+nano
+tiny
+small
+short
+lite
+slim
+thin
+bare
+plain
+blank
+clean
+dry           # as in a dry run
+test
+try
+maybe
+perhaps
+almost
+nearly
+someday
+weekend
+evening
+sunday
+idle
+spare
+odd
+loose
+stray
+side
+extra
+junior
+minor
+lesser
+humble
+modest
+quiet

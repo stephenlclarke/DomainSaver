@@ -1,0 +1,9 @@
+# tld	URL | WHOIS
+#
+# Hand-maintained escape hatch, read first by ds_rdap_endpoint (lib.sh).
+# A URL forces that RDAP endpoint; the literal WHOIS forces the whois path.
+# bootstrap.sh creates this file once and never rewrites it.
+#
+# Examples (uncomment to use):
+# app	https://pubapi.registry.google/rdap
+# info	WHOIS

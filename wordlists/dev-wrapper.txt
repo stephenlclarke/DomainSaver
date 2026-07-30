@@ -1,0 +1,93 @@
+# dev-wrapper.txt - names for ONE domain that fronts MANY short-lived projects.
+#
+# The use case: you want a single home like shed.link, and every weekend
+# experiment becomes rss.shed.link, tally.shed.link, whatever.shed.link. So the
+# name has to (a) be short, because it is a prefix everything else hangs off,
+# (b) survive being said out loud, and (c) imply "workshop", not "product" -
+# nothing here should sound like it promises uptime.
+#
+# Used with generate.sh:
+#   ./scripts/generate.sh --words wordlists/dev-wrapper.txt --tlds link,dev,sh
+#
+# Format: one label per line, lowercase a-z 0-9 and hyphen. '#' starts a
+# comment, to end of line. No dots - these are labels, not domains.
+#
+# CAUTION: the short, obvious ones (shed, lab, forge) are exactly the names a
+# registry marks premium. shed.link looked unregistered and quoted at $819.27
+# against a $7.72 list price. Expect to price-check, not just availability-check.
+
+shed          # the reference name for this whole idea: small, owned, yours
+hut
+bothy         # Scottish mountain shelter; short, unusual, still pronounceable
+shack
+lockup        # British: the rented garage where the projects actually live
+outhouse
+annexe
+lean-to
+potting       # potting shed, without the shed
+allotment     # measured at $109.47/yr on .co - price-check before you fall in love
+
+loft
+attic
+cellar
+basement
+pantry
+larder
+cupboard
+drawer        # as in the junk drawer, which is what this domain really is
+shelf
+rack
+pegboard
+
+yard
+depot
+dock
+wharf
+hangar
+garage
+barn
+silo
+quarry
+foundry
+forge
+kiln
+mill
+works         # note .works renews at $31.41 - see ds_tld_flags RENEWAL_TRAP
+workshop
+bench
+workbench
+vice
+anvil
+lathe
+jig
+rig
+
+sandbox
+playpen
+scrapyard
+salvage
+offcuts
+remnant
+midden       # archaeology's word for an ancient rubbish heap; very on-brand
+compost
+heap
+pile
+stack
+stash
+hoard
+cache
+trove
+
+tinker
+bodge         # British for a rough-but-working fix; the honest brand promise
+kludge
+cobble
+whittle
+potter        # to potter about: to work without a deadline
+fiddle
+doodle
+sketch
+scribble
+jotter
+spike         # the timeboxed throwaway experiment
+riff

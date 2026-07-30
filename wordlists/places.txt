@@ -1,0 +1,113 @@
+# places.txt - concrete physical places where things are kept, made or stored.
+#
+# Concrete nouns beat abstract ones for domains: they are easier to spell from
+# hearing them, easier to draw, and much less likely to already be a SaaS brand.
+# Everything here is a place you could stand in.
+#
+# Used with generate.sh:
+#   ./scripts/generate.sh --words wordlists/places.txt --tlds dev
+#   ./scripts/generate.sh --compound wordlists/qualifiers.txt wordlists/places.txt --tlds dev
+#
+# Format: one label per line, lowercase a-z 0-9 and hyphen. '#' starts a
+# comment, to end of line. No dots - these are labels, not domains.
+
+shed
+loft
+yard
+attic
+depot
+barn
+dock
+wharf
+pier
+jetty
+hangar
+garage
+cellar
+basement
+vault
+crypt
+forge
+foundry
+mill
+kiln
+quarry
+mine
+pit
+works
+workshop
+bench
+studio
+atelier
+lab
+den
+nook
+alcove
+niche
+snug          # British: the small back room of a pub. Six letters, no ambiguity
+corner
+porch
+stoop
+veranda
+terrace
+hearth
+pantry
+larder
+cupboard
+closet
+cabinet
+drawer
+shelf
+rack
+crate
+bin
+box
+chest
+trunk
+locker
+lockup
+storeroom
+warehouse
+granary
+silo
+stable
+paddock
+coop
+pen
+hutch
+kennel
+byre          # cow shed. Short, memorable, almost certainly unregistered
+orchard
+greenhouse
+glasshouse
+nursery
+plot
+patch
+allotment
+meadow
+field
+common
+green
+park
+camp
+basecamp
+outpost
+lodge
+cabin
+chalet
+cottage
+bungalow
+hut
+bothy
+tower
+turret
+keep
+bunker
+harbour
+harbor
+port
+haven
+cove
+bay
+inlet
+creek

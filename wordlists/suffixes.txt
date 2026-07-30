@@ -1,0 +1,100 @@
+# suffixes.txt - short words that go AFTER a name you already want.
+#
+# A suffix usually reads better than a prefix (shedworks beats worksshed) and
+# survives being said aloud without a hyphen. Mostly place-and-container nouns,
+# because they compose with almost any head word.
+#
+# TWO TRAPS worth knowing before you use this list:
+#  1. Do not pick a suffix that duplicates your TLD. shedapp.app, shedlab.lab
+#     and shedhq.hq read as stutters and get misremembered as the shorter form.
+#  2. Suffixes that are themselves TLDs (app, dev, io, sh, ly, co, one, now)
+#     tempt you into a domain hack (she.dshed - no). Keep the whole word in the
+#     label unless the hack is genuinely readable.
+#
+# Used with generate.sh:
+#   ./scripts/generate.sh --affix shed --suffixes wordlists/suffixes.txt --tlds com
+#   ./scripts/generate.sh --affix shed --prefixes wordlists/prefixes.txt \
+#       --suffixes wordlists/suffixes.txt --tlds dev --affix-both
+#
+# Format: one label per line, lowercase a-z 0-9 and hyphen. '#' starts a
+# comment, to end of line. No dots - these are labels, not domains.
+
+hq
+lab
+labs
+works
+workshop
+shop
+studio
+kit
+kits
+box
+crate
+bin
+bag
+case
+chest
+hub
+base
+camp
+den
+yard
+dock
+depot
+port
+pad
+deck
+desk
+bench
+table
+room
+space
+spot
+zone
+patch
+plot
+field
+garden
+grove
+stack
+store
+stash
+shelf
+rack
+pile
+heap
+log
+logs
+notes
+notebook
+journal
+diary
+list
+lists
+index
+ledger
+record
+archive
+vault
+attic
+cellar
+loft
+club
+crew
+gang
+guild
+co-op
+wip
+draft
+drafts
+bits
+bobs          # "bits and bobs": British for assorted small things
+odds
+ends
+scraps
+offcuts
+things
+stuff
+gear
+tools
+toolkit

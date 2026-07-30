@@ -1,0 +1,98 @@
+# ---------------------------------------------------------------------------
+# data/ - generated caches vs. curated seed data
+# ---------------------------------------------------------------------------
+# Almost everything in data/ is DERIVED, disposable data: delete it and
+# `scripts/bootstrap.sh` puts it back from public, unauthenticated sources.
+# Committing those caches would ship a stale copy of the internet, so the rule
+# is "ignore data/ by default, then allow back the handful of hand-maintained
+# files that bootstrap.sh never overwrites".
+#
+# NOTE: git has no trailing comments in .gitignore, so every note here is on
+# its own line. Order matters - the last matching pattern wins.
+data/*
+
+# --- curated seed data that MUST ship -------------------------------------
+# hand-tuned per-registry concurrency budgets (sweep.sh)
+!data/registry-limits.tsv
+# hand-maintained RDAP / whois escape hatch (lib.sh reads it first)
+!data/rdap-overrides.tsv
+# reputation seeds, canonical file; bootstrap.sh only ever appends
+!data/tld-flags.tsv
+# short alias: symlink -> tld-flags.tsv
+!data/reputation.tsv
+!data/.gitkeep
+
+# --- generated caches ------------------------------------------------------
+# Already covered by `data/*`, but listed by name so the intent survives any
+# future loosening of that rule:
+#   rdap-bootstrap.json   raw IANA RDAP bootstrap
+#   rdap-endpoints.tsv    built RDAP index          (alias tldmap.tsv)
+#   porkbun-pricing.json  raw Porkbun price list
+#   tld-prices.tsv        built price table         (alias prices.tsv)
+#   whois-servers.tsv     seeded, then grown lazily from whois.iana.org
+data/rdap-bootstrap.json
+data/rdap-endpoints.tsv
+data/tldmap.tsv
+data/porkbun-pricing.json
+data/tld-prices.tsv
+data/prices.tsv
+data/whois-servers.tsv
+
+# Half-written downloads and rebuilds (bootstrap.sh stages into temp files).
+*.tmp
+*.new
+*.part
+*.partial
+*.download
+
+# ---------------------------------------------------------------------------
+# Scratch, scratchpads and local run output
+# ---------------------------------------------------------------------------
+scratch/
+scratchpad/
+scratchpads/
+tmp/
+out/
+results/
+*.log
+*.bak
+*.orig
+*.rej
+*~
+.#*
+*.sw?
+
+# ---------------------------------------------------------------------------
+# Credentials - nothing resembling a secret goes near a commit
+# ---------------------------------------------------------------------------
+# quote.sh reads PORKBUN_API_KEY / PORKBUN_SECRET_KEY from the environment.
+# Keep them in a local .env or your shell profile, never in the repo.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+.netrc
+.htpasswd
+credentials
+credentials.*
+secrets
+secrets.*
+*secret*
+*.token
+*_token
+
+# ---------------------------------------------------------------------------
+# OS and editor noise
+# ---------------------------------------------------------------------------
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

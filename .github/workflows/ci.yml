@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck (if the runner image lacks it)
+        run: |
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck
+          fi
+          shellcheck --version
+
+      # Every tracked *.sh - scripts/, tests/ and the top-level installer.
+      # -x follows `. lib.sh`; -P scripts tells shellcheck where to find it.
+      - name: Lint shell scripts
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -x -P scripts
+
+  test:
+    name: tests (offline)
+    runs-on: ubuntu-latest
+    env:
+      # The suite's network group does real registry lookups. CI skips it so
+      # pull requests never hammer someone's RDAP server - and so a rate-limited
+      # or flaky registry can never turn main red. Run it locally instead:
+      #   tests/test.sh
+      DS_TEST_SKIP_NETWORK: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq whois
+
+      - name: Show the shell version under test
+        run: bash --version | head -1
+
+      # No bootstrap step on purpose: everything in data/ that bootstrap.sh
+      # produces is gitignored, so this job runs against exactly what a fresh
+      # clone has - the seeded tables and nothing else. The offline tests must
+      # pass in that state.
+      - name: Run the test suite
+        run: bash tests/test.sh
