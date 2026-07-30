@@ -633,8 +633,13 @@ for f in "$SCRIPTS_DIR"/*.sh "$_T_DIR"/test.sh "$DS_ROOT_DIR"/install.sh; do
 	fi
 done
 
+# -S warning must match .github/workflows/ci.yml and CONTRIBUTING.md exactly.
+# Info-level notes are excluded on purpose: shellcheck releases disagree about
+# them, and the Ubuntu runner's build emits SC2317 for every trap handler and
+# indirectly-called function while 0.11 emits none. Gating on those makes a
+# green build a property of the runner image rather than of the code.
 if command -v shellcheck >/dev/null 2>&1; then
-	if shellcheck -x -P "$SCRIPTS_DIR" "$SCRIPTS_DIR"/*.sh "$_T_DIR"/test.sh \
+	if shellcheck -x -P "$SCRIPTS_DIR" -S warning "$SCRIPTS_DIR"/*.sh "$_T_DIR"/test.sh \
 		>"$TMPDIR_T/sc.out" 2>&1; then
 		pass "shellcheck scripts/ and tests/"
 	else
