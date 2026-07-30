@@ -1,212 +1,134 @@
 ---
-name: domain-lookup
-description: Find, verify and price domain names using real registry and registrar evidence instead of guesswork. Use when the user asks whether a domain is available or taken, wants help brainstorming or choosing a domain name, needs a short or wrapper domain for a project, compares TLDs or asks what a TLD costs, worries about renewal prices or premium/reserved names, wants to bulk-check hundreds of candidates, or wants to audit what they pay for the domains they already own. A domain must never be called available without running these scripts - an RDAP 404 also covers registry-reserved and premium-priced names.
+name: domain-search
+description: Search broadly for a domain when the name, the TLD or even the shape is still open - guided suggestion plus large-scale registry scans, costed on renewal price and safe against registry rate limits. Use when the user wants help finding or brainstorming a domain, is choosing between TLDs, needs a short or wrapper domain for projects, asks what a domain or TLD will cost, wants hundreds or thousands of candidates checked at once, worries about premium or reserved names or renewal traps, or asks whether a specific name is available. A name must never be reported as available on a registry lookup alone - an RDAP 404 also covers registry-reserved and premium-priced names, and only a real quote can tell them apart.
 ---
 
-# DomainSaver: domain availability and pricing, done honestly
+# domain-search
 
-A toolkit for finding domains that are actually purchasable, at a price you
-actually want to pay, without getting banned by registries on the way.
+Finding a domain is a **funnel, not a lookup**. The user usually arrives with a
+vague idea ("something for my side projects") and needs help converging. Your
+job is to run that funnel: propose directions, scan widely and cheaply, cost
+what survives, and quote only the finalists.
 
-## THE RULE
+Generating names is free. Scanning is rate-limited. Quoting spends real API
+calls. Spend them in that order, and the search stays fast and cheap.
 
-**AVAILABILITY IS NOT PURCHASABILITY. Never report a name as available on
-registry evidence alone.**
+## Who does what
 
-An RDAP 404 or a whois "no match" means only *"this name is not present in the
-registry"*. That single answer covers three completely different commercial
-realities:
+**You** do the two things a script cannot: invent candidate names with meaning,
+and interpret what a sweep is telling you. **The scripts** do the one thing you
+must never do from memory or guesswork: decide whether a name is taken, and
+what it costs.
 
-1. genuinely available at the list price,
-2. **registry-RESERVED** - nobody can buy it at any price,
-3. **PREMIUM-PRICED** - buyable, at 10x to 200x the list price.
+Never assert availability you have not run. Never ask a script to be creative.
 
-Naive domain tools report all three as "available". They are wrong. Measured
-evidence from this project, every figure confirmed against a live registrar
-quote:
+## The funnel
 
-| Name           | Looked like | Actually quoted | Standard price for that TLD |
-| -------------- | ----------- | --------------- | --------------------------- |
-| `shed.link`    | free        | **$819.27/yr**  | $7.72                       |
-| `bar.link`     | free        | **$1638.01/yr** | $7.72                       |
-| `shed.top`     | free        | **$50.91/yr**   | $4.63                       |
-| `shed.page`    | free        | **$64.93/yr**   | $10.81                      |
-| `allotment.co` | free        | **$109.47/yr**  | $15.76                      |
+### 1. Frame it — ask at most two or three questions
 
-So the toolkit uses five states, and only one of them is a green light:
+Only ask what changes the search. Usually:
 
-| State            | Meaning                                                        | Who may assign it     |
-| ---------------- | -------------------------------------------------------------- | --------------------- |
-| **REGISTERED**   | taken                                                           | probe (`check`/`sweep`) |
-| **UNREGISTERED** | absent from the registry - may still be reserved or premium     | probe (`check`/`sweep`) |
-| **ERROR**        | lookup failed, throttled or timed out. Not an answer. Re-run it | probe (`check`/`sweep`) |
-| **AVAILABLE**    | quoted, purchasable, priced in line with the TLD list price     | `quote.sh` only       |
-| **PREMIUM**      | quoted and purchasable, but far above list price                | `quote.sh` only       |
-| **RESERVED**     | unregistered, but the registrar returns no sellable offer       | `quote.sh` only       |
+- **What is it for, and how long will it live?** A wrapper for throwaway
+  projects has different needs from a product name.
+- **Does anyone else have to see it?** Client-facing pushes towards `.com` and
+  away from spam-associated TLDs; a private wrapper does not care.
+- **Budget shape?** "Cheapest that works" and "must be `.com`" lead to
+  completely different searches.
 
-**Forbidden**, in report text, summaries, tables and commit messages alike:
+Country matters more than people expect: a UK user gets `.uk` at roughly half
+the price of `.com`, with no premium tier. Infer it rather than asking.
 
-- calling anything "available", "free" or "you can grab this" on the strength of
-  a `check.sh` / `sweep.sh` result;
-- silently upgrading UNREGISTERED to AVAILABLE because it "looks unused";
-- treating an ERROR row as a soft "probably free" - it is a missing answer;
-- inventing, estimating or remembering a price. Every number shown to the user
-  comes out of `data/tld-prices.tsv` or a `quote.sh` quote.
+If the user already named a candidate, skip to step 4 — but still offer
+directions afterwards, because the first idea is rarely the best one.
 
-When no Porkbun API key is configured, quotes are impossible. In that case
-report `UNREGISTERED (unverified - may be reserved or premium-priced)` and tell
-the user how to enable quotes. Do not soften it.
+### 2. Propose directions, not names
 
-## Division of labour
+This is the step that makes the search feel guided. Offer **four to six naming
+*directions* with two or three examples each**, and let the user react. Reacting
+to a direction is far easier than reviewing 200 names.
 
-This is the whole design. Respect it in both directions.
+Directions that work for developer/project domains:
 
-**The model (you) generates candidate names.** Semantic, creative, themed,
-on-brand, pun-aware, pronounceable-out-loud - all the judgement a script cannot
-have. You also decide which TLDs are plausible, and you rank and present the
-final results.
+- **Literal** — what it does (`sideprojects`, `betalab`, `demoshed`)
+- **Temporary by design** — for things that will not last (`thelayby`,
+  `holdingbay`, `stopgapapps`, `transientapps`)
+- **Place/container** — where things are kept (`shed`, `attic`, `yard`,
+  `depot`, `allotment`, `pottingshed`)
+- **Honest/self-aware** — often the most memorable (`unfinishedapps`,
+  `showyourworking`, `stuffibuilt`)
+- **Personal** — surname or initials (`hammantlabs`, `jonsshed`); zero
+  trademark risk and it survives a project graduating
+- **Numeric/specific** — a true fact about them (`lab268` for 268 repos)
 
-**The scripts establish truth.** Availability, routing, prices, premium
-detection, rate limits, retries. All of it is measured, none of it is inferred.
+Then iterate. "I like the lab one" or "not `.uk`" is a strong signal — regenerate
+inside that direction rather than starting over.
 
-- **Never let the model guess availability.** Not from memory, not from "that
-  looks like it would be taken", not from a DNS lookup, not from whether the
-  site loads in a browser. If it was not probed in this session, it is unknown.
-- **Never let the script invent names.** `generate.sh` does mechanical
-  cross-products (wordlist x TLD, CVC patterns, compounds, affixes). It has no
-  taste. Use it to *expand* a list you authored, or to enumerate a search space
-  exhaustively - not to think of the idea.
+### 3. Generate broadly
 
-The good pattern: you write 20-60 genuinely good candidate labels, pipe them
-through `generate.sh --words - --tlds ...` to cross them with TLDs, let
-`sweep.sh` and `quote.sh` kill the ones that are fantasies, then you rank the
-survivors.
-
-## Toolkit location
+Write the interesting labels yourself, then expand mechanically. Aim for
+**hundreds** of candidates per round — availability rates for good names run
+about 10% in `.com` and 80% in `.uk`, so a 20-name list mostly returns nothing.
 
 ```bash
-DS="${DOMAINSAVER_HOME:-$HOME/.claude/skills/domain-lookup}"
-```
+DS="${DOMAINSAVER_HOME:-$HOME/.claude/skills/domain-search}"
 
-If you are working inside a DomainSaver checkout, set `DS` to the repo root
-instead. All scripts resolve their own data directory, so they can be run from
-any working directory. Check the layout before the first run:
+# your own labels, crossed with plausible TLDs
+printf 'shed\nloft\nyard\nattic\ndepot\n' \
+  | "$DS/scripts/generate.sh" --words - --tlds com,uk,link > candidates.txt
 
-```bash
-ls "$DS/scripts" "$DS/wordlists"
-```
-
-## Workflow
-
-### Step 0 - Preflight (once per session)
-
-```bash
-"$DS/scripts/bootstrap.sh"          # refresh caches older than 7 days
-"$DS/scripts/bootstrap.sh" --force  # refetch everything now
-"$DS/scripts/bootstrap.sh" --rebuild  # offline: rebuild tables from cached JSON
-```
-
-This downloads the IANA RDAP bootstrap (~1200 TLDs) and the Porkbun public
-price list (~907 TLDs) into `data/`, then verifies them. No credentials needed,
-no network calls to a registry. It is idempotent and cheap - run it first
-rather than debugging a stale cache later.
-
-Then check whether real quotes are possible:
-
-```bash
-[ -n "$PORKBUN_API_KEY" ] && [ -n "$PORKBUN_SECRET_KEY" ] && echo "quotes enabled"
-```
-
-If unset, tell the user up front that results will stop at UNREGISTERED, and
-that a free key from <https://porkbun.com/account/api> plus:
-
-```bash
-export PORKBUN_API_KEY='pk1_...'
-export PORKBUN_SECRET_KEY='sk1_...'
-```
-
-unlocks AVAILABLE / PREMIUM / RESERVED verdicts. Never write keys into the
-repo, a file, or a command line.
-
-### Step 1 - Generate candidates (you first, script second)
-
-Write the interesting labels yourself. Then expand mechanically:
-
-```bash
-# your own list, crossed with the TLDs you think are plausible
-printf 'shed\nloft\nyard\nbothy\npotting\n' \
-  | "$DS/scripts/generate.sh" --words - --tlds link,dev,sh,uk > candidates.txt
-
-# a curated wordlist that ships with the toolkit
-"$DS/scripts/generate.sh" --words "$DS/wordlists/dev-wrapper.txt" \
-  --tlds link,dev,sh > candidates.txt
-
-# wrap a name the user already likes
-"$DS/scripts/generate.sh" --affix shed \
+# wrap a name the user already likes (betalab -> betalabhq, mybetalab, ...)
+"$DS/scripts/generate.sh" --affix betalab \
   --prefixes "$DS/wordlists/prefixes.txt" \
-  --suffixes "$DS/wordlists/suffixes.txt" --tlds com,dev > candidates.txt
+  --suffixes "$DS/wordlists/suffixes.txt" --tlds com > candidates.txt
 
-# glue two concept lists together (proto + shed -> protoshed)
+# glue two concept lists (qualifier + place -> protoshed)
 "$DS/scripts/generate.sh" --compound "$DS/wordlists/qualifiers.txt" \
-  "$DS/wordlists/places.txt" --tlds dev --join - > candidates.txt
+  "$DS/wordlists/places.txt" --tlds com,uk > candidates.txt
 
-# exhaustive search spaces
-"$DS/scripts/generate.sh" --cvc  --tld dev   # 1615 pronounceable 3-letter labels
-"$DS/scripts/generate.sh" --cvcv --tld io    # 9025 pronounceable 4-letter labels
-"$DS/scripts/generate.sh" --two  --tld uk    # all 676 two-letter labels
+# exhaustive spaces, when the user wants "the shortest thing available"
+"$DS/scripts/generate.sh" --cvc  --tld uk    # 1615 pronounceable 3-letter
+"$DS/scripts/generate.sh" --two  --tld uk    # all 676 two-letter
 
-# always cost it before running it
-"$DS/scripts/generate.sh" --cvc --tld dev --count
+# ALWAYS size it before running it
+"$DS/scripts/generate.sh" --cvc --tld uk --count
 ```
 
-Generation is free; **checking** is what costs. Every generated line is one
-future registry query. Use `--count` first, and `--limit N` to cap. Above ~1000
-names, expect a sweep to take real minutes and warn the user before starting.
+Wordlists that ship with the toolkit: `dev-wrapper.txt`, `places.txt`,
+`qualifiers.txt`, `prefixes.txt`, `suffixes.txt`.
 
-Available wordlists: `dev-wrapper.txt` (short hostable names), `places.txt`
-(concrete nouns), `prefixes.txt`, `suffixes.txt`, `qualifiers.txt`.
+### 4. Scan — and do not get rate limited
 
-### Step 2 - Establish availability
-
-**A few names (up to ~25): `check.sh`.** Precise, per-name, shows the TLD's
-standard price and risk flags alongside the status.
+**Always use `sweep.sh` for more than ~25 names, and `check.sh` for fewer.**
+Never hand-roll `curl` or `whois` loops: `sweep.sh` groups work by registry,
+applies a per-registry concurrency budget, backs off on 429s, retries, and
+falls back to whois on the final round. Hand-rolled loops get you banned, and
+the ban is silent — you get 429s that look like "not registered" if you are
+careless.
 
 ```bash
-"$DS/scripts/check.sh" shed.link bar.link example.com
-"$DS/scripts/check.sh" --json shed.page | jq .
-"$DS/scripts/check.sh" -q shed.link              # header-free TSV for pipelines
-printf 'shed.top\nallotment.co\n' | "$DS/scripts/check.sh"
-```
-
-```text
-DOMAIN       STATUS        REG/YR  RENEW/YR  FLAGS                DETAIL
-example.com  REGISTERED    $11.08    $11.08  NO_PREMIUM_REGISTRY  rdap:200 registrar=...
-shed.link    UNREGISTERED   $7.72     $7.72  -                    rdap:404
-```
-
-**Many names: `sweep.sh`.** Groups work by registry endpoint, gives each
-registry its own concurrency budget, retries throttled names with backoff, falls
-back from RDAP to whois on the final round, and emits exactly one row per unique
-input name in input order - nothing is ever silently dropped.
-
-```bash
-"$DS/scripts/sweep.sh" --dry-run candidates.txt        # plan: which registries, how hard
+"$DS/scripts/sweep.sh" --dry-run candidates.txt      # plan first, ALWAYS
 "$DS/scripts/sweep.sh" -p 16 -o swept.tsv candidates.txt
-cat candidates.txt | "$DS/scripts/sweep.sh" - > swept.tsv
-"$DS/scripts/sweep.sh" --explain-limit whois.nic.uk whois   # why is this slow?
+"$DS/scripts/check.sh" betalab.uk hammantlabs.com    # a handful, precisely
 ```
 
-Output is TSV: `status  domain  tld  endpoint  attempts  detail`.
+Rules that keep a big scan safe:
 
-Always run `--dry-run` first on a large list and show the user the plan. Exit
-code 2 means some rows are ERROR: report them as unknown, and offer to re-run
-just those names. Never quietly drop them.
+- **Run `--dry-run` first** on anything over a few hundred names and show the
+  user the plan (which registries, how long) before spending their time.
+- **Do not raise `-p` above 16.** The per-registry budgets do the real work;
+  a bigger global number just queues.
+- **Some registries are slow by design.** Identity Digital (`.info`, `.pro`,
+  `.fyi`, `.rocks` and ~240 more) is capped at one connection because it
+  throttles hard. A list full of those will crawl — say so rather than letting
+  it look hung. `--explain-limit <host> <transport>` shows why.
+- **Exit code 2 means some rows are `ERROR`.** Report those as *unknown*, never
+  as free, and offer to re-run just those names.
+- Sweeping the same list twice is wasteful — keep `swept.tsv` and reuse it.
 
-### Step 3 - Price-join (free, instant, no network)
+### 5. Cost it before you quote it
 
-Attach each surviving candidate's standard TLD price and reputation flags. This
-is a local awk join against the bootstrap caches - do it for **every**
-UNREGISTERED name, before spending any rate-limited quote:
+Join every `UNREGISTERED` result to its TLD's standard price and flags. This is
+local, instant and free, and it is what makes the quote budget go far:
 
 ```bash
 awk -F'\t' -v OFS='\t' '
@@ -218,206 +140,83 @@ awk -F'\t' -v OFS='\t' '
   | sort -t"$(printf '\t')" -k3,3n > priced.tsv
 ```
 
-Columns: `domain, standard_registration, standard_renewal, flags`, cheapest
-renewal first.
+**Always report the renewal price, never the first year.** The gap is where the
+money is: `.bar` is $2.57 then $52.01 forever; `.codes` $4.63 then $57.16;
+`.online`/`.site`/`.space` about $2 then $26–29. `RENEWAL_TRAP` and
+`SPAM_ASSOCIATED` flags come out of this join — surface both.
+
+### 6. Quote only the finalists
+
+`quote.sh` is the only thing that may say `AVAILABLE`, and it costs about 11
+seconds per name. Quote the shortlist — **ten names at most** — after the user
+has narrowed by direction and price.
+
+```bash
+"$DS/scripts/quote.sh" hammantlabs.com betalab.uk
+```
 
 ```text
-shed.link	7.72	7.72	-
-hut.dev	8.75	12.87	-
-shed.bar	2.57	52.01	RENEWAL_TRAP
+DOMAIN            VERDICT     QUOTE-REG  QUOTE-REN  LIST-REG  LIST-REN   RATIO  NOTES
+shed.link         PREMIUM        819.27     819.27      7.72      7.72  106.1x  PRICE_OVER_LIST
+hammantlabs.com   AVAILABLE       11.08      11.08     11.08     11.08    1.0x  NO_PREMIUM_REGISTRY
 ```
 
-This step is what makes the quote budget go far: it eliminates the names whose
-whole TLD is a renewal trap before you pay 11 seconds each to quote them.
+Without credentials configured this step cannot run. That is not a failure —
+report the shortlist as `UNREGISTERED`, say plainly that purchasability is
+unconfirmed, and tell the user a quote is needed. Never promote a name anyway.
 
-### Step 4 - Quote the survivors (the only step that may say AVAILABLE)
+### 7. Present, then loop
+
+Give a short ranked table — name, renewal price, any flags — plus **one clear
+recommendation with a reason**, not a list of twenty equals. Then invite a
+narrowing signal ("more like this one?", "drop `.uk`?") and run the funnel
+again from step 2. Two or three tight rounds beat one enormous scan.
+
+## Reading a broad scan
+
+This is the interpretation the scripts cannot do for you.
+
+**High availability at short lengths is a premium-pricing signal, not
+opportunity.** Measured: 633 of the 676 two-letter `.foo` domains are
+unregistered — and none are for sale, because the registry reserves them.
+Meanwhile every one of the 676 two-letter `.uk` names is taken, *precisely
+because* Nominet has no premium tier, so investors swept them at list price
+years ago.
+
+So when a TLD shows lots of free short names, tell the user it means those
+names are expensive, not that they got lucky. And when a TLD shows none, that
+is the honest scarcity — the cheap ones really are gone.
+
+Practical consequences worth stating:
+
+- Two-letter names: effectively unobtainable anywhere.
+- Three-letter: premium only — expect $150+/yr even for invented ones.
+- Four to five letters: the floor for standard pricing, and only for words
+  obscure enough that investors skipped them.
+- Compound names (`betashed`, `thelayby`) sit below every registry's premium
+  threshold, so **list price is real price**. This is why "longer but meaningful"
+  is usually the right advice.
+- `.com`, `.net`, `.org` and `.uk` have no registry premium tier at all: if the
+  name is unregistered, it is the list price.
+
+## What each step costs
+
+| Step | Cost | Scale |
+|---|---|---|
+| Generate | free, offline | unlimited |
+| Price-join | free, offline | unlimited |
+| `check.sh` | 1 registry query/name | up to ~25 |
+| `sweep.sh` | 1 registry query/name, throttled | thousands |
+| `quote.sh` | ~11s + an API call/name | ~10 |
+
+## Preflight
+
+Once per session, make sure the caches exist:
 
 ```bash
-"$DS/scripts/quote.sh" shed.link bar.link
-"$DS/scripts/quote.sh" -o json -f shortlist.txt | jq -s 'map(select(.verdict=="AVAILABLE"))'
-grep '^UNREGISTERED' swept.tsv | "$DS/scripts/quote.sh" --probe never -
-"$DS/scripts/check.sh" -q shed.link | "$DS/scripts/quote.sh" -o json -
+"$DS/scripts/bootstrap.sh"        # refreshes only if older than 7 days
 ```
 
-`quote.sh` understands bare names, `check.sh` rows and `sweep.sh` rows as-is.
-
-```text
-# prices are USD per year; RATIO = quoted renewal / list renewal
-DOMAIN        VERDICT      QUOTE-REG  QUOTE-REN  LIST-REG  LIST-REN    RATIO  NOTES
-shed.link     PREMIUM         819.27     819.27      7.72      7.72   106.1x  API_PREMIUM PRICE_OVER_LIST
-hut.dev       AVAILABLE         8.75      12.87      8.75     12.87     1.0x  FIRST_YEAR_PROMO
-```
-
-**Budget carefully.** Porkbun allows roughly one check per 10 seconds per
-account, so `quote.sh` waits 11s between calls: 10 names is ~2 minutes, 100
-names is ~18 minutes. Quote a **shortlist**, typically 10-20 names, chosen by
-you after step 3. Tell the user the expected wall-clock time before starting a
-long run. Do not lower `--delay` below the account's real limit; you will just
-be throttled.
-
-For a long list, `--probe always` is cheaper: it probes first and reports
-already-REGISTERED names without spending a quote on them.
-
-### Step 5 - Present ranked results
-
-Rank by, in order: verdict (AVAILABLE first), **renewal** price, reputation
-flags, then your own judgement about the name (length, sayability, spelling from
-speech). Show, for every row: verdict, renewal price, and the evidence that
-produced it.
-
-State plainly which names were quoted and which were only probed. If quotes were
-not configured, say so in the summary, not in a footnote.
-
-## Reporting rules
-
-- **Report renewal price, not first-year price.** Registration price is a
-  marketing number; renewal is what the user actually pays every year. Known
-  traps, all real: `.bar` $2.57 -> **$52.01** (20x), `.codes` $4.63 ->
-  **$57.16** (12x), `.fun` / `.works` / `.zone` -> **$31.41**, `.online` /
-  `.site` / `.space` ~$2 -> **$26-29**, `.lol` / `.live` / `.rest` ->
-  **$26.26**. Where registration and renewal differ, show both and lead with
-  renewal.
-- **Surface reputation flags** whenever they are set. They come back from
-  `check.sh`, `quote.sh` and the price-join:
-  - `SPAM_ASSOCIATED` - some corporate mail and web filters block the whole TLD.
-    The $5.64 cluster (`bid date download loan men party stream trade win`) plus
-    `top`, `click`, `quest`. Flag this loudly for anything that will send email
-    or be shared inside a company.
-  - `RENEWAL_TRAP` - renewal >= 3x registration and >= $20.
-  - `RENEWAL_EXPENSIVE` - renewal >= $25/yr.
-  - `NO_PREMIUM_REGISTRY` - `com`, `net` (Verisign), `uk` (Nominet), `org`. The
-    list price is the real price for every name; there is no premium tier to be
-    ambushed by.
-  - `NO_PRICE_DATA` - the TLD is absent from the price cache. Say "unknown",
-    never estimate.
-  - From a quote: `API_PREMIUM`, `PRICE_OVER_LIST`, `FIRST_YEAR_PROMO`,
-    `MIN_DURATION=N`.
-- Quote the multi-year cost when a TLD is expensive or has `MIN_DURATION`. "$52
-  a year, forever" lands very differently from "$2.57".
-- Prices are USD, from Porkbun. Say so. Other registrars differ.
-
-## Registry routing gotchas (already encoded - do not re-derive)
-
-These were learned the hard way and are baked into `lib.sh`, `data/` and
-`sweep.sh`. Do not reimplement them, do not "optimise" around them, and do not
-write ad-hoc `curl` calls to RDAP endpoints in place of the scripts.
-
-1. **Resolve every TLD's RDAP endpoint from the IANA bootstrap**
-   (<https://data.iana.org/rdap/dns.json>) and cache it. `bootstrap.sh` does this.
-2. **Never use the `rdap.org` proxy.** It returns HTTP 429 after roughly 60
-   requests. `lib.sh` actively refuses it even if it appears in a bootstrap file.
-   Always call the registry's own endpoint.
-3. **Google Registry TLDs** (`app dev foo how day soy page new zip mov meme ing
-   boo esq prof phd rsvp channel nexus`) route to
-   `https://pubapi.registry.google/rdap`. The bootstrap endpoint for these
-   throttles hard; pubapi is generous.
-4. **Identity Digital / Afilias / Donuts TLDs** (`info pro rocks fyi` and ~240
-   more, detected by endpoint hostname) throttle brutally - 87 lookups once sat
-   unanswered for 10 minutes. They stay on **RDAP** and get 1 concurrency slot.
-   Do NOT divert them to whois: these gTLDs are RDAP-only. ICANN sunset the
-   WHOIS requirement, so IANA returns an empty `whois:` line for them and a
-   whois fallback can only ever produce `ERROR` (regression: `betalab.fyi`).
-5. **TLDs with no usable RDAP** (`io co me sh gg im st us eu de ch li at es se
-   dk ie nz`) go straight to whois. Whois servers are resolved via
-   `whois -h whois.iana.org <tld>` and cached. **`.co` is `whois.registry.co`,
-   not `whois.nic.co`** - the single most common wrong guess.
-6. **Nominet (`.uk`) is RDAP-first** at `rdap.nominet.uk`. Its whois fallback
-   (`whois.nic.uk`) has its own output format: "No match for" = available,
-   "Registered on:" = taken.
-7. **HTTP 429 / 000 / 503 get exponential backoff and a retry queue**, then a
-   final-round fallback from RDAP to whois. A throttled endpoint is never
-   allowed to be the last word on a name.
-8. **Never use DNS/NS lookups as an availability pre-filter.** Measured
-   false-positive rate ~90%: parked and registered domains frequently have no NS
-   records. All 30 "candidate" 3-letter `.uk` names found that way turned out to
-   be registered. `dig` tells you nothing about registration.
-
-### Reading a short-name sweep
-
-High apparent availability at short lengths is a **premium-pricing signal, not
-an opportunity**. 633 of the 676 two-letter `.foo` names probe as unregistered -
-they are registry-reserved. By contrast **all 676** two-letter `.uk` names are
-registered, precisely because Nominet has no premium tier, so investors could
-sweep them at list price. Interpret a wall of UNREGISTERED short names as "this
-registry is holding stock back", and say so to the user.
-
-## Failure modes
-
-| Symptom                                | What it means                     | Do this                                                                 |
-| -------------------------------------- | --------------------------------- | ----------------------------------------------------------------------- |
-| ERROR rows in a sweep                  | no answer, not a "probably free"  | re-run those names; report them as unknown                              |
-| `rdap:429` / `rate-limited`            | registry is throttling            | let the retry rounds run; lower `-p`; never bypass with raw curl        |
-| A sweep crawls                         | one angry registry owns the clock | `--dry-run` and `--explain-limit` to see which; it is usually by design  |
-| `no price data` / `NO_PRICE_DATA`      | TLD absent from Porkbun's list    | say "unknown"; do not estimate                                          |
-| `quote.sh` exits 3                     | no credentials                    | explain the export; keep reporting UNREGISTERED, not AVAILABLE          |
-| `quote.sh` exits 4                     | API rejected the key or the IP    | stop; check the key and its IP restriction. Do not retry in a loop      |
-| Bootstrap verification fails           | truncated download / captive proxy| `bootstrap.sh --force`; caches below the sanity floor are not trusted   |
-
-Exit codes: `check.sh` 0 ok / 1 some ERROR / 2 usage. `sweep.sh` 0 ok / 1 fatal
-/ 2 some ERROR / 130 interrupted (partial results still written). `quote.sh` 0
-ok / 1 some ERROR / 2 usage / 3 no credentials / 4 API rejected.
-
-## Script reference
-
-| Script         | Network | Purpose                                                                 |
-| -------------- | ------- | ----------------------------------------------------------------------- |
-| `bootstrap.sh` | yes     | refresh `data/` caches: RDAP endpoints, prices, whois servers, flags     |
-| `generate.sh`  | no      | mechanical candidate expansion: words, cvc, cvcv, two, compound, affix   |
-| `check.sh`     | yes     | a few names, precisely: status + standard price + flags                  |
-| `sweep.sh`     | yes     | thousands of names: registry-grouped, rate-limit-aware, retrying         |
-| `quote.sh`     | yes     | authenticated per-name quote; the only source of AVAILABLE/PREMIUM       |
-
-Every script supports `--help`. Read it rather than guessing at a flag.
-
-Useful environment variables: `DS_DATA_DIR`, `DS_QUIET`, `DS_DEBUG`,
-`DS_SWEEP_PARALLEL`, `DS_SWEEP_ROUNDS`, `DS_QUOTE_DELAY`,
-`DS_QUOTE_PREMIUM_MULTIPLE`, `PORKBUN_API_KEY`, `PORKBUN_SECRET_KEY`.
-
-## Recipes
-
-**"Is `example.com` free?"**
-
-```bash
-"$DS/scripts/check.sh" example.com          # then quote.sh if UNREGISTERED
-```
-
-**"Find me a short wrapper domain for my side projects."**
-Brainstorm labels yourself -> `generate.sh --words -` across 3-6 plausible TLDs
--> `sweep.sh` -> price-join -> quote the best 10-15 -> rank by renewal price and
-sayability. Recommend `NO_PREMIUM_REGISTRY` TLDs when the user wants no
-surprises.
-
-**"Which TLD should I use / what does .io cost?"**
-
-```bash
-awk -F'\t' '$1 == "io" || $1 == "dev" || $1 == "com" { print }' "$DS/data/tld-prices.tsv"
-```
-
-Then report renewal, plus flags from `data/tld-flags.tsv`. Never answer this
-from memory - the price table is cached locally and is authoritative here.
-
-**"Audit what I'm paying for my domains."**
-Take the user's list -> `check.sh --json` for status and standard prices ->
-highlight `RENEWAL_TRAP` / `RENEWAL_EXPENSIVE` / `SPAM_ASSOCIATED` -> compute
-annual spend at **renewal** prices -> suggest cheaper equivalents and check
-those are actually purchasable before recommending them.
-
-**"Get me a 3-letter domain."**
-
-```bash
-"$DS/scripts/generate.sh" --cvc --tld dev --count      # 1615 - confirm with the user
-"$DS/scripts/generate.sh" --cvc --tld dev > c.txt
-"$DS/scripts/sweep.sh" --dry-run c.txt && "$DS/scripts/sweep.sh" -o swept.tsv c.txt
-```
-
-Expect most UNREGISTERED hits at this length to be premium or reserved. Say so
-before the user gets attached to one.
-
-## Checklist before answering
-
-- [ ] Did a script produce every status and every price in this answer?
-- [ ] Is the word "available" used only for names `quote.sh` verdicted AVAILABLE?
-- [ ] Are ERROR rows reported as unknown rather than omitted?
-- [ ] Is the price shown the **renewal** price?
-- [ ] Are `SPAM_ASSOCIATED` / `RENEWAL_TRAP` flags surfaced, not buried?
-- [ ] If quotes were unavailable, does the summary say results are unverified?
+If a script reports a missing cache, run that and retry. Every script has a
+thorough `--help`; all of them write data to stdout and everything else to
+stderr, so piping is always safe.

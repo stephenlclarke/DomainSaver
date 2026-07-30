@@ -1702,9 +1702,9 @@ assert_eq "install.sh --dry-run changes nothing" "" "$(ls -A "$SKILLS")"
 
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" -q
 assert_rc "install.sh installs cleanly" 0 "$RC"
-assert_file "install.sh writes its marker file" "$SKILLS/domain-lookup/.domainsaver-install"
+assert_file "install.sh writes its marker file" "$SKILLS/domain-search/.domainsaver-install"
 for item in SKILL.md scripts wordlists; do
-	if [ -e "$SKILLS/domain-lookup/$item" ]; then
+	if [ -e "$SKILLS/domain-search/$item" ]; then
 		pass "install.sh installs $item"
 	else
 		fail "install.sh installs $item" "missing from the installed skill"
@@ -1713,7 +1713,7 @@ done
 
 # The installed copy has to actually work from where it landed.
 try env PATH="$STUB_PATH" DS_DATA_DIR="$E2E_DATA" DS_TEST_FIXTURES="$FIX" \
-	DS_RDAP_RETRIES=1 bash "$SKILLS/domain-lookup/scripts/check.sh" -q --no-price \
+	DS_RDAP_RETRIES=1 bash "$SKILLS/domain-search/scripts/check.sh" -q --no-price \
 	zzq7x4-installed.com
 assert_eq "the installed check.sh runs from its install location" "UNREGISTERED" \
 	"$(col 2 zzq7x4-installed.com "$OUT")"
@@ -1724,7 +1724,7 @@ assert_contains "and says --force is how you mean it" "--force" "$ERR"
 
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" --copy --force -q
 assert_rc "install.sh --copy --force replaces an install" 0 "$RC"
-if [ -f "$SKILLS/domain-lookup/scripts/lib.sh" ] && [ ! -L "$SKILLS/domain-lookup/scripts" ]; then
+if [ -f "$SKILLS/domain-search/scripts/lib.sh" ] && [ ! -L "$SKILLS/domain-search/scripts" ]; then
 	pass "install.sh --copy takes a real snapshot, not a symlink"
 else
 	fail "install.sh --copy takes a real snapshot, not a symlink" "scripts/ is still a link"

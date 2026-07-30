@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 #
-# install.sh - install the DomainSaver /domain-lookup skill for Claude Code.
+# install.sh - install the DomainSaver /domain-search skill for Claude Code.
 #
 #     ./install.sh              # symlink the toolkit into ~/.claude/skills
 #     ./install.sh --copy       # copy it instead (for a machine without the repo)
 #     ./install.sh --uninstall  # remove it again
 #
 # WHAT IT INSTALLS
-#   <skills-dir>/domain-lookup/
+#   <skills-dir>/domain-search/
 #     SKILL.md      the skill definition the agent reads
 #     scripts/      bootstrap.sh, generate.sh, check.sh, sweep.sh, quote.sh, lib.sh
 #     wordlists/    curated candidate wordlists
@@ -31,7 +31,7 @@
 set -euo pipefail
 
 IN_VERSION="1.0.0"
-IN_SKILL_NAME="domain-lookup"
+IN_SKILL_NAME="domain-search"
 IN_MARKER=".domainsaver-install"
 
 # Everything installed, in order. Missing optional items are skipped with a
