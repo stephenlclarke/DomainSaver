@@ -131,19 +131,24 @@ Join every `UNREGISTERED` result to its TLD's standard price and flags. This is
 local, instant and free, and it is what makes the quote budget go far:
 
 ```bash
-awk -F'\t' -v OFS='\t' '
-  FILENAME ~ /tld-prices/ { p[$1] = $2 "\t" $3; next }
-  FILENAME ~ /tld-flags/  { if ($0 !~ /^#/ && NF >= 2) f[$1] = $2; next }
-  /^#/ || $1 != "UNREGISTERED" { next }
-  { pr = ($3 in p) ? p[$3] : "-\t-"; print $2, pr, ($3 in f ? f[$3] : "-") }
-' "$DS/data/tld-prices.tsv" "$DS/data/tld-flags.tsv" swept.tsv \
-  | sort -t"$(printf '\t')" -k3,3n > priced.tsv
+"$DS/scripts/price-join.sh" swept.tsv > priced.tsv        # cheapest renewal first
+"$DS/scripts/sweep.sh" cands.txt | "$DS/scripts/price-join.sh" -
+"$DS/scripts/price-join.sh" --status REGISTERED swept.tsv  # audit what is owned
 ```
 
+Output is `domain, standard_registration, standard_renewal, flags`.
+
 **Always report the renewal price, never the first year.** The gap is where the
-money is: `.bar` is $2.57 then $52.01 forever; `.codes` $4.63 then $57.16;
-`.online`/`.site`/`.space` about $2 then $26–29. `RENEWAL_TRAP` and
-`SPAM_ASSOCIATED` flags come out of this join — surface both.
+money is, expressed as USD per year:
+
+| TLD | Year one | Renews at | Multiple |
+|---|---|---|---|
+| `.bar` | 2.57 | 52.01 | 20x |
+| `.codes` | 4.63 | 57.16 | 12x |
+| `.online` / `.site` / `.space` | ~1.96 | 26.26–28.84 | ~15x |
+| `.fun` / `.works` / `.zone` | 2.57–8.24 | 31.41 | up to 12x |
+
+`RENEWAL_TRAP` and `SPAM_ASSOCIATED` flags come out of this join — surface both.
 
 ### 6. Quote only the finalists
 
@@ -190,7 +195,7 @@ is the honest scarcity — the cheap ones really are gone.
 Practical consequences worth stating:
 
 - Two-letter names: effectively unobtainable anywhere.
-- Three-letter: premium only — expect $150+/yr even for invented ones.
+- Three-letter: premium only — expect USD 150+/yr even for invented ones.
 - Four to five letters: the floor for standard pricing, and only for words
   obscure enough that investors skipped them.
 - Compound names (`betashed`, `thelayby`) sit below every registry's premium

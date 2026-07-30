@@ -1687,7 +1687,33 @@ try env DS_QUOTE_NO_MAIN=1 DS_DATA_DIR="$E2E_DATA" \
 assert_contains "a small price difference is not a premium" "AVAILABLE" "$OUT"
 
 # ---------------------------------------------------------------------------
-# SECTION 15: install.sh
+# SECTION 15: SKILL.md is safe to load with arguments
+# ---------------------------------------------------------------------------
+#
+# Regression. Claude Code substitutes $0-$9 in a skill body with words from the
+# invocation arguments, so a bare positional is silently rewritten at load time.
+# SKILL.md previously embedded an awk price-join; invoking
+# "/domain-search find an available .com" turned `p[$1] = $2 "\t" $3` into
+# `p[an] = available "\t" .com`, and the documented pricing step was corrupt for
+# every argument-bearing invocation. Prices written as $2.57 were mangled too.
+#
+# The fix was to move the awk into scripts/price-join.sh and quote prices as USD.
+# Nothing in SKILL.md may reintroduce a bare $<digit>.
+
+section "SKILL.md argument safety"
+
+SKILL_MD="$DS_ROOT_DIR/SKILL.md"
+if [ -f "$SKILL_MD" ]; then
+	bad=$(grep -n '\$[0-9]' "$SKILL_MD" || true)
+	assert_eq "SKILL.md contains no \$<digit> (args would clobber it)" "" "$bad"
+	assert_contains "SKILL.md delegates the price-join to a script" \
+		"price-join.sh" "$(cat "$SKILL_MD")"
+else
+	skip "SKILL.md argument safety" "SKILL.md not found"
+fi
+
+# ---------------------------------------------------------------------------
+# SECTION 16: install.sh
 # ---------------------------------------------------------------------------
 
 section "install.sh"

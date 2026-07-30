@@ -221,6 +221,7 @@ $819.27/yr, and only `quote.sh` can tell you so.
 | `scripts/generate.sh`  | Generates candidate names. Touches no network — generating is free, *checking* is what costs you. Modes: `--words`, `--cvc`, `--cvcv`, `--two`, `--compound`, `--affix`. Warns before large runs.     |
 | `scripts/sweep.sh`     | The bulk engine. Probes tens of thousands of names in parallel, **grouped by registry endpoint** with a per-registry concurrency budget, with retries, backoff, whois fallback and a progress meter.  |
 | `scripts/check.sh`     | One or a few names, precisely: registry status, the TLD's standard price, and reputation/renewal-risk flags. Table, `--quiet` TSV, or `--json`.                                                       |
+| `scripts/price-join.sh` | Attaches each swept name's standard TLD price and reputation flags, cheapest renewal first. Offline and instant — run it before spending any quote budget, so whole-TLD renewal traps are gone first. |
 | `scripts/quote.sh`     | **Real per-name pricing.** Authenticated Porkbun `checkDomain` calls, premium detection, rate-limit adaptation. The only script allowed to output `AVAILABLE` / `PREMIUM` / `RESERVED`.                |
 | `scripts/lib.sh`       | Shared library — routing, probes, pricing, flags. Sourced by the others, never run directly.                                                                                                          |
 
