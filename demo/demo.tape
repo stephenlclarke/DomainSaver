@@ -1,4 +1,4 @@
-# DomainSaver demo — a real Codex skill run in about 25 seconds of playback.
+# DomainSaver demo — a faithful Codex version of the original terminal reveal.
 #
 # Render from the repository root:
 #
@@ -10,15 +10,13 @@
 #   * Codex CLI installed and signed in with a ChatGPT account.
 #   * The domain-search skill installed with ./install.sh.
 #   * PORKBUN_API_KEY / PORKBUN_SECRET_KEY exported for the live quote.
-#   * Public registry and Porkbun endpoints reachable from the recording host.
 #
-# No response is staged. Codex invokes the installed skill, which runs the
-# repository's registry check and authenticated registrar quote. The tape hides
-# the model's wait time, not its command or result. Re-render whenever Codex or
-# the CLI output changes so the GIF cannot drift from the real workflow.
-# `danger-full-access` is limited to this ephemeral task because the recording
-# needs live registry and registrar networking. Render only from a checkout you
-# trust; the prompt explicitly keeps the repository read-only.
+# The visible interaction keeps the original check, warning and quote sequence.
+# The only functional change is that each operation is requested through the
+# $domain-search skill. The hidden helper selects non-interactive execution,
+# low reasoning effort and live network access, then removes Markdown markers
+# for the original plain-terminal look. None of that is part of the prompt and
+# no response is staged.
 
 Output demo/demo.gif
 
@@ -27,49 +25,59 @@ Require codex
 Set Shell bash
 Set FontSize 18
 Set Width 1500
-Set Height 560
+Set Height 480
 Set Padding 24
 Set Theme "Catppuccin Mocha"
-Set TypingSpeed 32ms
+Set TypingSpeed 45ms
 Set PlaybackSpeed 1.0
-Set WaitTimeout 90s
+Set WaitTimeout 180s
 
-# Render from the repository root. Avoiding a hard-coded path keeps the public
-# asset portable and prevents the renderer's home directory appearing in it.
+# Keep recording-only launch settings off screen. Codex still uses the normal
+# ChatGPT login and installed $domain-search skill.
 Hide
+Type `codex() { command codex exec --ignore-user-config --ephemeral -s danger-full-access -c model_reasoning_effort=low "$@" 2>/dev/null | tr -d '*\140'; }` Enter
 Type "clear" Enter
 Show
 
-Sleep 700ms
+Sleep 800ms
 
-# --- Act 1: prove Codex is using ChatGPT authentication -----------------
-Type "# DomainSaver runs as a Codex skill using your ChatGPT account." Enter
-Sleep 900ms
-Type "codex login status" Enter
-Wait+Screen@10s /Logged in using ChatGPT/
-Sleep 1400ms
+# --- Act 1: what every other tool tells you ------------------------------
+Type "# Every domain tool says this name is available." Enter
+Sleep 1200ms
+Type "codex '$domain-search Check shed.link without a quote'" Enter
 
-# --- Act 2: invoke the skill through the Codex CLI ----------------------
-Type "" Enter
-Type "# Ask Codex to verify the registry result with a real registrar quote." Enter
-Sleep 1100ms
-Type "codex exec --ignore-user-config --ephemeral -s danger-full-access -c model_reasoning_effort=low '$domain-search Check shed.link with a registry lookup and live registrar quote. Reply in four lines with domain, registry/list renewal, registrar/quoted renewal, and why they differ. Do not modify files.' 2>/dev/null" Enter
-
-# The live quote and model response take roughly 30 seconds. Keep the render
-# deterministic and concise by waiting for the result without recording blank
-# frames; Show resumes on the actual completed terminal screen.
+# Hide only the model wait; resume on the real registry result.
 Sleep 600ms
 Hide
-Wait+Screen@90s /PREMIUM/
+Wait+Screen@90s /UNREGISTERED/
 Show
-Sleep 3800ms
+Sleep 1800ms
 
-# --- Act 3: state the safety boundary -----------------------------------
+# --- Act 2: the skill refuses to say 'available' ------------------------
 Type "" Enter
-Type "# Unregistered is not available. Codex checked instead of guessing." Enter
+Type "# UNREGISTERED. Not AVAILABLE. It will not guess." Enter
+Sleep 2s
+Type "# $7.72 is the TLD list price, not a quote for this name." Enter
+Sleep 2500ms
+
+# --- Act 3: the reveal ---------------------------------------------------
+Type "clear" Enter
+Sleep 500ms
+Type "# So ask the registrar what it actually costs." Enter
+Sleep 1200ms
+Type "codex '$domain-search Quote shed.link'" Enter
+
+Sleep 600ms
+Hide
+Wait+Screen@90s /819.27/
+Show
 Sleep 2200ms
+
+Type "" Enter
+Type "# $819.27/yr. 106x the list price." Enter
+Sleep 2500ms
 Type "# github.com/stephenlclarke/DomainSaver" Enter
-Sleep 2800ms
+Sleep 3s
 
 # ---------------------------------------------------------------------------
 # Social exports (LinkedIn wants video, not GIF). Regenerate from demo.gif:
