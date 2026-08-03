@@ -120,7 +120,7 @@ over RDAP. Note that `dig` is **not** used — see [Limitations](#limitations).
 ## Install
 
 ```bash
-git clone https://github.com/jhammant/DomainSaver.git
+git clone https://github.com/stephenlclarke/DomainSaver.git
 cd DomainSaver
 ./scripts/bootstrap.sh
 ```
@@ -156,33 +156,112 @@ premium quotes.
 | `rdap-overrides.tsv`   | Force an endpoint, or force whois — **edit this**        | Written once, never rewritten  |
 | `registry-limits.tsv`  | Per-registry concurrency budgets — **edit this**         | No, hand-maintained seed data  |
 
-### Optional: the `domain-search` skill for Codex
+### Run DomainSaver with Codex
 
 The scripts answer *"is this name free, and what does it cost?"*. They cannot
 answer *"I need a domain, I don't know what for yet."* — inventing candidates
 with meaning, and reading what a sweep implies, are model work.
 
-`SKILL.md` packages that half as an OpenAI Codex skill. It runs the search as a
-funnel: propose naming *directions*, generate hundreds of candidates inside
-whichever the user likes, sweep them safely, cost them on renewal price, and
-quote only the finalists.
+`SKILL.md` packages that half using the
+[Codex skills mechanism](https://developers.openai.com/codex/skills/). It runs
+the search as a funnel: propose naming *directions*, generate hundreds of
+candidates inside whichever the user likes, sweep them safely, cost them on
+renewal price, and quote only the finalists.
 
-Codex can use your ChatGPT account directly. DomainSaver does not need or store
-an OpenAI API key. If Codex is not already signed in, run `codex login` and
-complete the ChatGPT sign-in; `codex login status` confirms the active login.
+The skill works in the [Codex app](https://developers.openai.com/codex/app/) and
+the [Codex CLI](https://developers.openai.com/codex/cli/). Codex uses your
+ChatGPT account directly, so DomainSaver does not need or store an OpenAI API
+key. Porkbun credentials are separate: they are needed only when the skill
+quotes finalists to distinguish `AVAILABLE`, `PREMIUM` and `RESERVED` names.
+See [Porkbun API key](#porkbun-api-key-optional-strongly-recommended) for the two
+environment variables. Never paste either secret into a Codex prompt. GitHub
+Actions secrets belong to workflow runs and are not automatically available to
+local Codex app or CLI sessions.
+
+#### Install the skill
+
+Run the installer from the DomainSaver checkout:
 
 ```bash
-./install.sh              # symlink into ~/.codex/skills/domain-search/
-./install.sh --dry-run    # show what it would do first
-./install.sh --uninstall  # remove it again
+./install.sh --dry-run
+./install.sh
 ```
 
-Then start a new Codex task and ask for a domain in plain language. The skill
-activates automatically for relevant requests, or you can name it explicitly as
-`$domain-search`.
+By default this creates a symlink at
+`${CODEX_HOME:-$HOME/.codex}/skills/domain-search`. Use `./install.sh --copy`
+instead if the checkout may move, `./install.sh --force` to replace an existing
+installation, or `./install.sh --uninstall` to remove it. Start a new Codex task
+after installing so Codex discovers the skill.
+
+#### Codex app
+
+1. Open the Codex app and sign in with your ChatGPT account.
+2. Open the folder you want to use as the workspace. The skill may create files
+   such as `candidates.txt`, `swept.tsv` and `priced.tsv` there.
+3. Start a new task and invoke the skill explicitly:
+
+   ```text
+   $domain-search Find and rank short, trustworthy domains for a UK developer
+   tool. Prefer .com, .dev and .io, avoid hyphens, and optimise for renewal cost.
+   ```
+
+Codex can also select the skill automatically from a plain-language domain
+search request. Naming `$domain-search` explicitly makes the intended workflow
+unambiguous.
+
+#### Codex CLI
+
+Install the current Codex CLI by following the
+[official CLI guide](https://developers.openai.com/codex/cli/), then authenticate
+with your ChatGPT account:
+
+```bash
+codex login
+codex login status
+```
+
+For an interactive session, launch Codex in a workspace where it may write the
+search results:
+
+```bash
+cd /path/to/workspace
+codex
+```
+
+At the Codex prompt, run `/skills` to confirm that `domain-search` is available,
+then invoke it:
+
+```text
+/skills
+$domain-search Check shed.link, find ten lower-cost alternatives, and rank them.
+```
+
+You can also supply the request when starting an interactive task:
+
+```bash
+codex -C /path/to/workspace \
+  '$domain-search Find memorable .dev domains for a deployment dashboard.'
+```
+
+For a scriptable, non-interactive run, use `codex exec`. Domain searches need
+outbound network access, and `workspace-write` lets the skill create its working
+and result files inside the selected workspace:
+
+```bash
+codex exec --sandbox workspace-write -C /path/to/workspace \
+  '$domain-search Find and rank short domains for an incident review tool.'
+```
+
+Keep the prompt in single quotes in shell commands so the shell passes the
+literal `$domain-search` name to Codex instead of expanding it as an environment
+variable. Codex may ask you to allow the skill's normal `curl` and `whois`
+commands in an interactive task. A non-interactive environment must already
+permit those network calls.
 
 The CLI is fully usable without it, and the skill is fully usable without a
-Porkbun key (it just stops at `UNREGISTERED`).
+Porkbun key; without one, it stops at `UNREGISTERED` and never claims that a name
+is actually available. The next section shows how to run the shell scripts
+directly, without Codex.
 
 ## Quickstart
 
