@@ -11,6 +11,9 @@
 #   * The domain-search skill installed with ./install.sh.
 #   * PORKBUN_API_KEY / PORKBUN_SECRET_KEY exported for the live quote.
 #
+# Original work by Jon Hammant with Claude:
+#   https://github.com/jhammant/DomainSaver
+#
 # The visible interaction keeps the original check, warning and quote sequence.
 # The only functional change is that each operation is requested through the
 # $domain-search skill. The hidden helper selects non-interactive execution,
@@ -76,7 +79,11 @@ Sleep 2200ms
 Type "" Enter
 Type "# $819.27/yr. 106x the list price." Enter
 Sleep 2500ms
-Type "# github.com/stephenlclarke/DomainSaver" Enter
+Type "# Original work: Jon Hammant + Claude" Enter
+Sleep 1600ms
+Type "# github.com/jhammant/DomainSaver" Enter
+Sleep 1600ms
+Type "# Codex port: github.com/stephenlclarke/DomainSaver" Enter
 Sleep 3s
 
 # ---------------------------------------------------------------------------
