@@ -5,9 +5,9 @@ call a name "available" without a real price quote.
 
 ![DomainSaver running as a Codex skill: shed.link looks unregistered, then receives a live premium quote of $819.27/yr against a $7.72 list price](demo/demo.gif)
 
-*Regenerate with `vhs demo/demo.tape`. The tape invokes `$domain-search` through
-the Codex CLI; nothing in it is staged — those are live registry and registrar
-responses.*
+*Regenerate with `vhs demo/demo.tape`. The tape gives Codex short
+`$domain-search` check and quote requests; nothing in it is staged — those are
+live registry and registrar responses.*
 
 ## Why this exists
 
