@@ -9,6 +9,9 @@ call a name "available" without a real price quote.
 `$domain-search` check and quote requests; nothing in it is staged — those are
 live registry and registrar responses.*
 
+*Original work by [Jon Hammant](https://github.com/jhammant/DomainSaver) with
+Claude. This fork ports the skill to Codex.*
+
 ## Why this exists
 
 **Availability is not purchasability.**
