@@ -70,7 +70,7 @@ Write the interesting labels yourself, then expand mechanically. Aim for
 about 10% in `.com` and 80% in `.uk`, so a 20-name list mostly returns nothing.
 
 ```bash
-DS="${DOMAINSAVER_HOME:-$HOME/.claude/skills/domain-search}"
+DS="${DOMAINSAVER_HOME:-${CODEX_HOME:-$HOME/.codex}/skills/domain-search}"
 
 # your own labels, crossed with plausible TLDs
 printf 'shed\nloft\nyard\nattic\ndepot\n' \

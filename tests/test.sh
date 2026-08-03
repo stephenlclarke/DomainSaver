@@ -1690,8 +1690,8 @@ assert_contains "a small price difference is not a premium" "AVAILABLE" "$OUT"
 # SECTION 15: SKILL.md is safe to load with arguments
 # ---------------------------------------------------------------------------
 #
-# Regression. Claude Code substitutes $0-$9 in a skill body with words from the
-# invocation arguments, so a bare positional is silently rewritten at load time.
+# Regression. Skill runners may substitute $0-$9 in a skill body with words from
+# invocation arguments, so a bare positional can be silently rewritten at load time.
 # SKILL.md previously embedded an awk price-join; invoking
 # "/domain-search find an available .com" turned `p[$1] = $2 "\t" $3` into
 # `p[an] = available "\t" .com`, and the documented pricing step was corrupt for
@@ -1721,6 +1721,13 @@ section "install.sh"
 SKILLS="$TMPDIR_T/skills"
 mkdir -p "$SKILLS"
 
+try env CODEX_HOME="$TMPDIR_T/codex-home" HOME="$TMPDIR_T/fake-home" \
+	bash "$DS_ROOT_DIR/install.sh" --dry-run
+assert_rc "install.sh accepts the Codex default location" 0 "$RC"
+assert_contains "install.sh defaults to CODEX_HOME/skills" \
+	"to:   $TMPDIR_T/codex-home/skills/domain-search" "$OUT"
+assert_not_contains "install.sh no longer defaults to a Claude directory" ".claude" "$OUT$ERR"
+
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" --dry-run
 assert_rc "install.sh --dry-run exits 0" 0 "$RC"
 assert_contains "install.sh --dry-run says what it would do" "would link" "$OUT"
@@ -1728,7 +1735,20 @@ assert_eq "install.sh --dry-run changes nothing" "" "$(ls -A "$SKILLS")"
 
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" -q
 assert_rc "install.sh installs cleanly" 0 "$RC"
-assert_file "install.sh writes its marker file" "$SKILLS/domain-search/.domainsaver-install"
+if [ -L "$SKILLS/domain-search" ]; then
+	pass "install.sh links the whole skill directory for Codex discovery"
+else
+	fail "install.sh links the whole skill directory for Codex discovery" \
+		"the installed skill is not a directory symlink"
+fi
+assert_eq "the linked install points at the checkout" "$DS_ROOT_DIR" \
+	"$(cd -P "$SKILLS/domain-search" 2>/dev/null && pwd)"
+if [ ! -L "$SKILLS/domain-search/SKILL.md" ]; then
+	pass "install.sh leaves SKILL.md as a regular file for Codex discovery"
+else
+	fail "install.sh leaves SKILL.md as a regular file for Codex discovery" \
+		"SKILL.md is individually symlinked and Codex will skip it"
+fi
 for item in SKILL.md scripts wordlists; do
 	if [ -e "$SKILLS/domain-search/$item" ]; then
 		pass "install.sh installs $item"
@@ -1750,6 +1770,8 @@ assert_contains "and says --force is how you mean it" "--force" "$ERR"
 
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" --copy --force -q
 assert_rc "install.sh --copy --force replaces an install" 0 "$RC"
+assert_file "install.sh writes its marker file for a snapshot" \
+	"$SKILLS/domain-search/.domainsaver-install"
 if [ -f "$SKILLS/domain-search/scripts/lib.sh" ] && [ ! -L "$SKILLS/domain-search/scripts" ]; then
 	pass "install.sh --copy takes a real snapshot, not a symlink"
 else

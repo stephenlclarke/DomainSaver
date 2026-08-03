@@ -156,25 +156,30 @@ premium quotes.
 | `rdap-overrides.tsv`   | Force an endpoint, or force whois — **edit this**        | Written once, never rewritten  |
 | `registry-limits.tsv`  | Per-registry concurrency budgets — **edit this**         | No, hand-maintained seed data  |
 
-### Optional: the `/domain-search` skill for Claude Code
+### Optional: the `domain-search` skill for Codex
 
 The scripts answer *"is this name free, and what does it cost?"*. They cannot
 answer *"I need a domain, I don't know what for yet."* — inventing candidates
 with meaning, and reading what a sweep implies, are model work.
 
-`SKILL.md` packages that half as a [Claude Code](https://claude.com/claude-code)
-skill. It runs the search as a funnel: propose naming *directions*, generate
-hundreds of candidates inside whichever the user likes, sweep them safely,
-cost them on renewal price, and quote only the finalists.
+`SKILL.md` packages that half as an OpenAI Codex skill. It runs the search as a
+funnel: propose naming *directions*, generate hundreds of candidates inside
+whichever the user likes, sweep them safely, cost them on renewal price, and
+quote only the finalists.
+
+Codex can use your ChatGPT account directly. DomainSaver does not need or store
+an OpenAI API key. If Codex is not already signed in, run `codex login` and
+complete the ChatGPT sign-in; `codex login status` confirms the active login.
 
 ```bash
-./install.sh              # symlink into ~/.claude/skills/domain-search/
+./install.sh              # symlink into ~/.codex/skills/domain-search/
 ./install.sh --dry-run    # show what it would do first
 ./install.sh --uninstall  # remove it again
 ```
 
-Then ask Claude Code for a domain in plain language — `/domain-search` fires on
-its own when the request is about finding, pricing or comparing domains.
+Then start a new Codex task and ask for a domain in plain language. The skill
+activates automatically for relevant requests, or you can name it explicitly as
+`$domain-search`.
 
 The CLI is fully usable without it, and the skill is fully usable without a
 Porkbun key (it just stops at `UNREGISTERED`).

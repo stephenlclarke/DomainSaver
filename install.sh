@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 #
-# install.sh - install the DomainSaver /domain-search skill for Claude Code.
+# install.sh - install the DomainSaver domain-search skill for OpenAI Codex.
 #
-#     ./install.sh              # symlink the toolkit into ~/.claude/skills
+#     ./install.sh              # symlink the toolkit into ~/.codex/skills
 #     ./install.sh --copy       # copy it instead (for a machine without the repo)
 #     ./install.sh --uninstall  # remove it again
 #
@@ -14,10 +14,11 @@
 #     wordlists/    curated candidate wordlists
 #     data/         the derived caches (created by bootstrap.sh if absent)
 #
-#   SYMLINK MODE (default) links each of those to this checkout, so `git pull`
-#   updates the installed skill and the caches in data/ are shared with the
-#   repo. COPY MODE takes a snapshot, which survives the checkout being moved
-#   or deleted but has to be re-installed to update.
+#   SYMLINK MODE (default) links the skill directory to this checkout, so
+#   `git pull` updates the installed skill and the caches in data/ are shared
+#   with the repo. Codex supports a linked skill directory but deliberately
+#   ignores a linked SKILL.md file. COPY MODE takes a snapshot, which survives
+#   the checkout being moved or deleted but has to be re-installed to update.
 #
 # DESIGN CONSTRAINTS (same as the rest of the toolkit, deliberate):
 #   * bash 3.2 compatible - no associative arrays, no `declare -A`, no readarray.
@@ -30,7 +31,7 @@
 
 set -euo pipefail
 
-IN_VERSION="1.0.0"
+IN_VERSION="1.1.0"
 IN_SKILL_NAME="domain-search"
 IN_MARKER=".domainsaver-install"
 
@@ -87,7 +88,7 @@ _in_run() {
 
 _in_usage() {
 	cat <<EOF
-install.sh $IN_VERSION - install the DomainSaver "/$IN_SKILL_NAME" skill
+install.sh $IN_VERSION - install the DomainSaver "$IN_SKILL_NAME" skill for Codex
 
 USAGE
   ./install.sh [options]
@@ -101,7 +102,7 @@ OPTIONS
                        the installed skill, and data/ caches are shared.
       --uninstall      remove an installed skill and exit.
   -p, --prefix DIR     skills directory to install into.
-                       Default: \${CLAUDE_CONFIG_DIR:-\$HOME/.claude}/skills
+                       Default: \${CODEX_HOME:-\$HOME/.codex}/skills
   -f, --force          replace an existing installation (or, with --uninstall,
                        remove a directory this script cannot prove it created).
   -n, --dry-run        print what would happen and change nothing.
@@ -117,7 +118,10 @@ AFTER INSTALLING
          export PORKBUN_API_KEY='pk1_...'
          export PORKBUN_SECRET_KEY='sk1_...'
      Get a key at https://porkbun.com/account/api. Keep it out of the repo.
-  3. Start a new Claude Code session and ask it to find or check a domain.
+  3. Sign in with your ChatGPT account if needed:
+         codex login
+  4. Start a new Codex session and ask it to find or check a domain. You can
+     also name the skill explicitly as \$domain-search.
 
 EXIT STATUS
   0  installed, uninstalled, or nothing to do
@@ -195,13 +199,13 @@ _in_resolve_self_dir() {
 
 # _in_skills_dir
 #   Stdout: the skills directory to install into. --prefix wins, then
-#   CLAUDE_CONFIG_DIR, then ~/.claude.
+#   CODEX_HOME, then ~/.codex.
 _in_skills_dir() {
 	if [ -n "$IN_SKILLS_DIR" ]; then
 		printf '%s\n' "$IN_SKILLS_DIR"
 		return 0
 	fi
-	printf '%s/skills\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+	printf '%s/skills\n' "${CODEX_HOME:-$HOME/.codex}"
 	return 0
 }
 
@@ -279,7 +283,7 @@ _in_remove() {
 # ---------------------------------------------------------------------------
 
 # _in_install_item <src> <dest> <name>
-#   Installs one top-level item, symlinked or copied. An existing entry of the
+#   Copies one top-level item into a snapshot install. An existing entry of the
 #   same name is replaced (the directory itself was already cleared or is new).
 _in_install_item() {
 	_ini_src="$1/$3"
@@ -291,24 +295,18 @@ _in_install_item() {
 		_in_run "replace $_ini_dst" rm -rf "$_ini_dst"
 	fi
 
-	if [ "$IN_MODE" = "copy" ]; then
-		# -R (not -a, not -L): the only spelling portable across BSD and GNU cp.
-		# It copies the data/ alias symlinks as symlinks, which is correct -
-		# they are relative, so they keep resolving inside the snapshot.
-		_in_run "copy $3 -> $_ini_dst" cp -R "$_ini_src" "$_ini_dst"
-	else
-		# Absolute target: the link keeps working from any cwd, and it is
-		# obvious in `ls -l` where the real files live.
-		_in_run "link $3 -> $_ini_dst" ln -s "$_ini_src" "$_ini_dst"
-	fi
+	# -R (not -a, not -L): the only spelling portable across BSD and GNU cp.
+	# It copies the data/ alias symlinks as symlinks, which is correct - they
+	# are relative, so they keep resolving inside the snapshot.
+	_in_run "copy $3 -> $_ini_dst" cp -R "$_ini_src" "$_ini_dst"
 
 	unset _ini_src _ini_dst 2>/dev/null || true
 	return 0
 }
 
 # _in_write_marker <src> <dest>
-#   Records what was installed, how and from where. --uninstall trusts this
-#   file, and it is the fastest way to answer "which checkout is this skill?".
+#   Records what was installed, how and from where in a snapshot install.
+#   Linked installs are already self-identifying through their symlink target.
 _in_write_marker() {
 	if [ "$IN_DRYRUN" = "1" ]; then
 		printf 'would write %s/%s\n' "$2" "$IN_MARKER"
@@ -348,19 +346,25 @@ _in_do_install() {
 		_in_remove "$_ind_dest"
 	fi
 
-	_in_run "create $_ind_dest" mkdir -p "$_ind_dest"
+	if [ "$IN_MODE" = "symlink" ]; then
+		# Codex follows a symlinked skill directory, but intentionally skips an
+		# individually symlinked SKILL.md file. Link the package as one unit.
+		_in_run "link $_ind_src -> $_ind_dest" ln -s "$_ind_src" "$_ind_dest"
+	else
+		_in_run "create $_ind_dest" mkdir -p "$_ind_dest"
 
-	for _ind_item in $IN_REQUIRED_ITEMS; do
-		_in_install_item "$_ind_src" "$_ind_dest" "$_ind_item" ||
-			_in_die "required item missing from the checkout: $_ind_item"
-	done
-	for _ind_item in $IN_OPTIONAL_ITEMS; do
-		if [ -e "$_ind_src/$_ind_item" ]; then
-			_in_install_item "$_ind_src" "$_ind_dest" "$_ind_item" || true
-		fi
-	done
+		for _ind_item in $IN_REQUIRED_ITEMS; do
+			_in_install_item "$_ind_src" "$_ind_dest" "$_ind_item" ||
+				_in_die "required item missing from the checkout: $_ind_item"
+		done
+		for _ind_item in $IN_OPTIONAL_ITEMS; do
+			if [ -e "$_ind_src/$_ind_item" ]; then
+				_in_install_item "$_ind_src" "$_ind_dest" "$_ind_item" || true
+			fi
+		done
 
-	_in_write_marker "$_ind_src" "$_ind_dest"
+		_in_write_marker "$_ind_src" "$_ind_dest"
+	fi
 
 	# The scripts are run directly by the agent, so make sure they are runnable
 	# even from a checkout that lost its permission bits (a zip download will).
@@ -373,7 +377,7 @@ _in_do_install() {
 	_in_say ""
 	_in_say "installed: $_ind_dest"
 	_in_say "  mode:    $IN_MODE ($( [ "$IN_MODE" = symlink ] && printf 'tracks %s' "$_ind_src" || printf 'snapshot of %s' "$_ind_src" ))"
-	_in_say "  skill:   /$IN_SKILL_NAME"
+	_in_say "  skill:   \$$IN_SKILL_NAME"
 	_in_say ""
 	_in_say "Next steps:"
 	_in_say "  1. $_ind_dest/scripts/bootstrap.sh"
@@ -384,7 +388,8 @@ _in_do_install() {
 	_in_say "       export PORKBUN_API_KEY='pk1_...'"
 	_in_say "       export PORKBUN_SECRET_KEY='sk1_...'"
 	_in_say "       key: https://porkbun.com/account/api  (never commit it)"
-	_in_say "  3. start a new Claude Code session and ask it to find or check a domain."
+	_in_say "  3. run 'codex login' if Codex is not already signed in with ChatGPT."
+	_in_say "  4. start a new Codex session and ask it to find or check a domain."
 	if [ "$IN_MODE" = "symlink" ]; then
 		_in_say ""
 		_in_say "Note: this install points at $_ind_src."
@@ -436,7 +441,7 @@ main() {
 		_in_do_uninstall "$IN_DEST"
 		;;
 	install)
-		_in_say "installing the /$IN_SKILL_NAME skill"
+		_in_say "installing the $IN_SKILL_NAME skill for Codex"
 		_in_say "  from: $IN_SRC"
 		_in_say "  to:   $IN_DEST"
 		if [ ! -d "$IN_SKILLS" ]; then
