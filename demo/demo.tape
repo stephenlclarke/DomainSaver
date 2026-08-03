@@ -1,68 +1,75 @@
-# DomainSaver demo — the whole pitch in ~25 seconds.
+# DomainSaver demo — a real Codex skill run in about 25 seconds of playback.
 #
-# Render:  vhs demo/demo.tape
-# Output:  demo/demo.gif
+# Render from the repository root:
 #
-# REQUIRES PORKBUN_API_KEY / PORKBUN_SECRET_KEY in the environment. Without
-# them quote.sh cannot make a per-name call, and the reveal (the entire point
-# of the demo) degrades to a "no credentials" message.
+#   PORKBUN_API_KEY=... PORKBUN_SECRET_KEY=... vhs demo/demo.tape
 #
-# The numbers below are not staged: shed.link really is quoted at $819.27/yr
-# against a $7.72 list price. Re-render whenever the CLI output changes so the
-# GIF can never drift from reality.
+# Output: demo/demo.gif
+#
+# Requirements:
+#   * Codex CLI installed and signed in with a ChatGPT account.
+#   * The domain-search skill installed with ./install.sh.
+#   * PORKBUN_API_KEY / PORKBUN_SECRET_KEY exported for the live quote.
+#   * Public registry and Porkbun endpoints reachable from the recording host.
+#
+# No response is staged. Codex invokes the installed skill, which runs the
+# repository's registry check and authenticated registrar quote. The tape hides
+# the model's wait time, not its command or result. Re-render whenever Codex or
+# the CLI output changes so the GIF cannot drift from the real workflow.
+# `danger-full-access` is limited to this ephemeral task because the recording
+# needs live registry and registrar networking. Render only from a checkout you
+# trust; the prompt explicitly keeps the repository read-only.
 
 Output demo/demo.gif
 
+Require codex
+
 Set Shell bash
 Set FontSize 18
-# quote.sh's table is ~115 columns. Narrower than this and the NOTES column
-# wraps, which is exactly the row a viewer needs to read in one glance.
 Set Width 1500
-# Height is deliberately tight: each act is ~13 lines, and any spare rows
-# become dead space that dominates the frame once the GIF is letterboxed
-# into a square or 16:9 video for social.
-Set Height 480
+Set Height 560
 Set Padding 24
 Set Theme "Catppuccin Mocha"
-Set TypingSpeed 45ms
+Set TypingSpeed 32ms
 Set PlaybackSpeed 1.0
+Set WaitTimeout 90s
 
-# No `cd`: vhs inherits the working directory, so render from the repo root
-# (`vhs demo/demo.tape`). Hard-coding a path both breaks for other people and
-# prints the renderer's home directory into a public asset, because check.sh
-# names the absolute path to quote.sh in its warning.
+# Render from the repository root. Avoiding a hard-coded path keeps the public
+# asset portable and prevents the renderer's home directory appearing in it.
 Hide
 Type "clear" Enter
 Show
 
-Sleep 800ms
+Sleep 700ms
 
-# --- Act 1: what every other tool tells you ------------------------------
-Type "# Every domain tool says this name is available." Enter
-Sleep 1200ms
-Type "./scripts/check.sh shed.link" Enter
-Sleep 6s
+# --- Act 1: prove Codex is using ChatGPT authentication -----------------
+Type "# DomainSaver runs as a Codex skill using your ChatGPT account." Enter
+Sleep 900ms
+Type "codex login status" Enter
+Wait+Screen@10s /Logged in using ChatGPT/
+Sleep 1400ms
 
-# --- Act 2: the tool refuses to say 'available' --------------------------
+# --- Act 2: invoke the skill through the Codex CLI ----------------------
 Type "" Enter
-Type "# UNREGISTERED. Not AVAILABLE. It will not guess." Enter
-Sleep 2s
-Type "# $7.72 is the TLD list price, not a quote for this name." Enter
-Sleep 2500ms
+Type "# Ask Codex to verify the registry result with a real registrar quote." Enter
+Sleep 1100ms
+Type "codex exec --ignore-user-config --ephemeral -s danger-full-access -c model_reasoning_effort=low '$domain-search Check shed.link with a registry lookup and live registrar quote. Reply in four lines with domain, registry/list renewal, registrar/quoted renewal, and why they differ. Do not modify files.' 2>/dev/null" Enter
 
-# --- Act 3: the reveal ---------------------------------------------------
-Type "clear" Enter
-Sleep 500ms
-Type "# So ask the registrar what it actually costs." Enter
-Sleep 1200ms
-Type "./scripts/quote.sh shed.link" Enter
-Sleep 7s
+# The live quote and model response take roughly 30 seconds. Keep the render
+# deterministic and concise by waiting for the result without recording blank
+# frames; Show resumes on the actual completed terminal screen.
+Sleep 600ms
+Hide
+Wait+Screen@90s /PREMIUM/
+Show
+Sleep 3800ms
 
+# --- Act 3: state the safety boundary -----------------------------------
 Type "" Enter
-Type "# $819.27/yr. 106x the list price." Enter
-Sleep 2500ms
-Type "# github.com/jhammant/DomainSaver" Enter
-Sleep 3s
+Type "# Unregistered is not available. Codex checked instead of guessing." Enter
+Sleep 2200ms
+Type "# github.com/stephenlclarke/DomainSaver" Enter
+Sleep 2800ms
 
 # ---------------------------------------------------------------------------
 # Social exports (LinkedIn wants video, not GIF). Regenerate from demo.gif:
