@@ -1780,15 +1780,21 @@ if [ -f "$SKILL_MD" ]; then
 		"price-join.sh" "$(cat "$SKILL_MD")"
 	assert_contains "SKILL.md uses Claude's loaded skill directory" \
 		'${CLAUDE_SKILL_DIR}' "$(cat "$SKILL_MD")"
+	assert_contains "SKILL.md handles an unexpanded Claude directory under nounset" \
+		"CLAUDE_DS='\${CLAUDE_SKILL_DIR}'" "$(cat "$SKILL_MD")"
 	assert_contains "SKILL.md accepts Codex's loaded skill directory" \
 		'DOMAINSAVER_HOME' "$(cat "$SKILL_MD")"
 	resolver_order=$(awk '
-		/CODEX_HOME:-\$HOME\/.agents/ { codex = NR }
+		/CODEX_HOME:-\$HOME\/.agents/ { current = NR }
+		/DS="\$HOME\/\.codex\/skills\/domain-search"/ { legacy = NR }
 		/CLAUDE_CONFIG_DIR:-\$HOME\/\.claude/ { claude = NR }
-		END { print (codex > 0 && claude > codex) ? "codex-first" : "wrong-order" }
+		END {
+			print (current > 0 && legacy > current && claude > legacy) \
+				? "agent-first" : "wrong-order"
+		}
 	' "$SKILL_MD")
-	assert_eq "SKILL.md does not make Codex execute a separate Claude copy" \
-		"codex-first" "$resolver_order"
+	assert_eq "SKILL.md prefers current and legacy agent installs to a Claude fallback" \
+		"agent-first" "$resolver_order"
 else
 	skip "SKILL.md argument safety" "SKILL.md not found"
 fi

@@ -74,11 +74,15 @@ about 10% in `.com` and 80% in `.uk`, so a 20-name list mostly returns nothing.
 # Claude Code expands CLAUDE_SKILL_DIR before running the block. In Codex, set
 # DOMAINSAVER_HOME from the SKILL.md path in the loaded skill metadata; the
 # standard-location fallbacks below keep direct shell use convenient.
-DS="${DOMAINSAVER_HOME:-}"
-[ -n "$DS" ] || DS="${CLAUDE_SKILL_DIR}"
+CLAUDE_DS='${CLAUDE_SKILL_DIR}'
+case "$CLAUDE_DS" in
+'$'{CLAUDE_SKILL_DIR}) CLAUDE_DS="" ;;
+esac
+DS="${DOMAINSAVER_HOME:-$CLAUDE_DS}"
 [ -n "$DS" ] && [ -d "$DS/scripts" ] || DS="${CODEX_HOME:-$HOME/.agents}/skills/domain-search"
-[ -d "$DS/scripts" ] || DS="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/domain-search"
 [ -d "$DS/scripts" ] || DS="$HOME/.codex/skills/domain-search"
+[ -d "$DS/scripts" ] || DS="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/domain-search"
+unset CLAUDE_DS
 
 # your own labels, crossed with plausible TLDs
 printf 'shed\nloft\nyard\nattic\ndepot\n' \
