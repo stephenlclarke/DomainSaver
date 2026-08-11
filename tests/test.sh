@@ -1904,6 +1904,21 @@ try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" --uninstall -q
 assert_rc "install.sh --uninstall exits 0" 0 "$RC"
 assert_eq "install.sh --uninstall removes everything it installed" "" "$(ls -A "$SKILLS")"
 
+# A skill name is public metadata, not an ownership marker. An unrelated real
+# directory must survive uninstall even if its SKILL.md uses the same name and
+# it contains a file with the install marker's filename.
+FOREIGN_SKILLS="$TMPDIR_T/foreign-skills"
+mkdir -p "$FOREIGN_SKILLS/domain-search"
+printf '%s\n' '---' 'name: domain-search' '---' >"$FOREIGN_SKILLS/domain-search/SKILL.md"
+printf 'not a DomainSaver marker\n' >"$FOREIGN_SKILLS/domain-search/.domainsaver-install"
+printf 'keep me\n' >"$FOREIGN_SKILLS/domain-search/user-file"
+try bash "$DS_ROOT_DIR/install.sh" --prefix "$FOREIGN_SKILLS" --uninstall -q
+assert_rc "install.sh refuses to uninstall an unmarked real directory" 1 "$RC"
+assert_file "uninstall preserves files it cannot prove it owns" \
+	"$FOREIGN_SKILLS/domain-search/user-file"
+assert_contains "uninstall explains the ownership check" \
+	"no valid .domainsaver-install marker" "$ERR"
+
 # ---------------------------------------------------------------------------
 # SECTION 16: bash 3.2 portability
 # ---------------------------------------------------------------------------

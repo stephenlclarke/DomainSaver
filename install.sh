@@ -331,12 +331,18 @@ _in_check_deps() {
 }
 
 # _in_is_ours <dest>
-#   Exit 0 if <dest> is an installation this script made, or is unmistakably a
-#   DomainSaver skill directory. Used to refuse deleting somebody else's files.
+#   Exit 0 for a valid copied-install marker, or for a DomainSaver directory
+#   symlink that uninstall can safely unlink without touching its target.
 _in_is_ours() {
-	[ -e "$1/$IN_MARKER" ] && return 0
-	[ -f "$1/SKILL.md" ] && grep -q "^name:[ ]*$IN_SKILL_NAME" "$1/SKILL.md" 2>/dev/null && return 0
-	return 1
+	if [ -h "$1" ]; then
+		[ -f "$1/SKILL.md" ] &&
+			grep -q "^name:[ ]*$IN_SKILL_NAME" "$1/SKILL.md" 2>/dev/null && return 0
+		return 1
+	fi
+
+	[ -f "$1/$IN_MARKER" ] || return 1
+	grep -qx "skill=$IN_SKILL_NAME" "$1/$IN_MARKER" 2>/dev/null &&
+		grep -qx 'mode=copy' "$1/$IN_MARKER" 2>/dev/null
 }
 
 # _in_remove <dest>
@@ -486,7 +492,7 @@ _in_do_uninstall() {
 
 	if ! _in_is_ours "$_inu_dest" && [ "$IN_FORCE" != "1" ]; then
 		error "$_inu_dest is not recognisably a DomainSaver install"
-		printf '       (no %s marker and no matching SKILL.md).\n' "$IN_MARKER" >&2
+		printf '       (no valid %s marker or DomainSaver skill symlink).\n' "$IN_MARKER" >&2
 		printf '       Refusing to delete it. Re-run with --force if you are sure.\n' >&2
 		exit 1
 	fi
