@@ -771,6 +771,20 @@ assert_rc "whois process failure exits as an ERROR result" 1 "$RC"
 assert_contains "whois process failure emits an ERROR record under errexit" \
 	"ERROR|example.co|whois:whois.invalid empty response" "$OUT"
 
+# A direct library caller may enable errexit without wrapping ds_probe in a
+# conditional. An RDAP failure must still reach the intended WHOIS fallback.
+try bash -c '
+	set -e
+	. "$1"
+	ds_rdap_endpoint() { printf "%s\n" "https://rdap.invalid"; }
+	ds_probe_rdap() { printf "%s\n" "ERROR|example.com|rdap:503"; return 1; }
+	ds_probe_whois() { printf "%s\n" "REGISTERED|example.com|whois:fallback"; return 0; }
+	ds_probe example.com
+' _ "$LIB_SH"
+assert_rc "RDAP failure falls back to WHOIS under errexit" 0 "$RC"
+assert_contains "the fallback result preserves both probe details" \
+	"REGISTERED|example.com|whois:fallback after rdap:503" "$OUT"
+
 section "lib.sh: registry routing rules"
 
 # Rule 3: Google Registry TLDs go to pubapi, never to the throttled bootstrap

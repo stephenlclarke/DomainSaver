@@ -878,8 +878,8 @@ ds_probe() {
 	fi
 
 	if _dp_base=$(ds_rdap_endpoint "$_dp_tld"); then
-		_dp_res=$(ds_probe_rdap "$_dp_dom" "$_dp_base")
-		_dp_rc=$?
+		_dp_rc=0
+		_dp_res=$(ds_probe_rdap "$_dp_dom" "$_dp_base") || _dp_rc=$?
 		if [ "$_dp_rc" = "0" ]; then
 			printf '%s\n' "$_dp_res"
 			return 0
@@ -897,8 +897,8 @@ ds_probe() {
 		return 1
 	fi
 
-	_dp_res=$(ds_probe_whois "$_dp_dom")
-	_dp_rc=$?
+	_dp_rc=0
+	_dp_res=$(ds_probe_whois "$_dp_dom") || _dp_rc=$?
 	printf '%s\n' "$_dp_res"
 	unset _dp_dom _dp_tld _dp_base _dp_res _dp_rdap_detail
 	return "$_dp_rc"
