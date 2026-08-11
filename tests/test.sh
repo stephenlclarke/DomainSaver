@@ -1731,12 +1731,96 @@ section "install.sh"
 SKILLS="$TMPDIR_T/skills"
 mkdir -p "$SKILLS"
 
+try bash "$DS_ROOT_DIR/install.sh" --help
+assert_rc "install.sh --help exits 0" 0 "$RC"
+assert_contains "install.sh --help is rendered from its usage block" \
+	"INSTALL:" "$OUT"
+assert_contains "install.sh --help documents the default target" \
+	"default: claude" "$OUT"
+assert_contains "install.sh --help documents both invocation forms" \
+	'Codex:        $domain-search' "$OUT"
+assert_contains "install.sh --help documents the Codex path override" \
+	"CODEX_HOME" "$OUT"
+
+INSTALL_ALIAS="$TMPDIR_T/domainsaver-install"
+ln -s "$DS_ROOT_DIR/install.sh" "$INSTALL_ALIAS"
+try bash "$INSTALL_ALIAS" --help
+assert_rc "install.sh --help works through a renamed symlink" 0 "$RC"
+assert_contains "install.sh --help derives the invoked script name" \
+	"domainsaver-install - install the DomainSaver" "$OUT"
+
+try bash "$DS_ROOT_DIR/install.sh" --version
+assert_rc "install.sh --version exits 0" 0 "$RC"
+assert_contains "install.sh --version names itself" "install.sh 1.2.0" "$OUT"
+
+try bash "$DS_ROOT_DIR/install.sh" --target
+assert_rc "install.sh rejects --target without a value" 2 "$RC"
+assert_contains "install.sh usage errors include help" "OPTIONS:" "$ERR"
+
+try bash "$DS_ROOT_DIR/install.sh" --prefix
+assert_rc "install.sh rejects --prefix without a value" 2 "$RC"
+
 try env CODEX_HOME="$TMPDIR_T/codex-home" HOME="$TMPDIR_T/fake-home" \
-	bash "$DS_ROOT_DIR/install.sh" --dry-run
-assert_rc "install.sh accepts the Codex default location" 0 "$RC"
-assert_contains "install.sh defaults to CODEX_HOME/skills" \
+	bash "$DS_ROOT_DIR/install.sh" -t codex --dry-run
+assert_rc "install.sh accepts the legacy Codex location override" 0 "$RC"
+assert_contains "install.sh accepts the short target option" \
+	"target:  codex" "$OUT"
+assert_contains "install.sh honors CODEX_HOME/skills when explicitly set" \
 	"to:   $TMPDIR_T/codex-home/skills/domain-search" "$OUT"
-assert_not_contains "install.sh no longer defaults to a Claude directory" ".claude" "$OUT$ERR"
+
+try env -u CODEX_HOME HOME="$TMPDIR_T/modern-codex-home" \
+	bash "$DS_ROOT_DIR/install.sh" --target=codex --dry-run
+assert_rc "install.sh accepts the current Codex location" 0 "$RC"
+assert_contains "install.sh accepts the equals target form" \
+	"target:  codex" "$OUT"
+assert_contains "install.sh defaults Codex to HOME/.agents/skills" \
+	"to:   $TMPDIR_T/modern-codex-home/.agents/skills/domain-search" "$OUT"
+
+LEGACY_HOME="$TMPDIR_T/legacy-codex-home"
+mkdir -p "$LEGACY_HOME/.codex/skills/domain-search"
+try env -u CODEX_HOME HOME="$LEGACY_HOME" \
+	bash "$DS_ROOT_DIR/install.sh" --target codex --force --dry-run
+assert_rc "install.sh accepts an existing legacy Codex installation" 0 "$RC"
+assert_contains "install.sh keeps updating an existing HOME/.codex skill" \
+	"to:   $LEGACY_HOME/.codex/skills/domain-search" "$OUT"
+
+try env CLAUDE_CONFIG_DIR="$TMPDIR_T/claude-config" HOME="$TMPDIR_T/fake-home" \
+	bash "$DS_ROOT_DIR/install.sh" --target claude --dry-run
+assert_rc "install.sh accepts the Claude Code location" 0 "$RC"
+assert_contains "install.sh honors CLAUDE_CONFIG_DIR/skills" \
+	"to:   $TMPDIR_T/claude-config/skills/domain-search" "$OUT"
+
+try env -u CLAUDE_CONFIG_DIR HOME="$TMPDIR_T/default-claude-home" \
+	bash "$DS_ROOT_DIR/install.sh" --dry-run
+assert_rc "install.sh defaults to Claude Code" 0 "$RC"
+assert_contains "the default target uses HOME/.claude/skills" \
+	"to:   $TMPDIR_T/default-claude-home/.claude/skills/domain-search" "$OUT"
+
+try bash "$DS_ROOT_DIR/install.sh" --target neither --dry-run
+assert_rc "install.sh rejects an unknown target" 2 "$RC"
+try bash "$DS_ROOT_DIR/install.sh" --target both --prefix "$SKILLS" --dry-run
+assert_rc "install.sh rejects one prefix for two targets" 2 "$RC"
+
+DUAL_HOME="$TMPDIR_T/dual-home"
+mkdir -p "$DUAL_HOME"
+try env -u CODEX_HOME -u CLAUDE_CONFIG_DIR HOME="$DUAL_HOME" \
+	bash "$DS_ROOT_DIR/install.sh" --target both -q
+assert_rc "install.sh installs for Claude Code and Codex together" 0 "$RC"
+if [ -L "$DUAL_HOME/.claude/skills/domain-search" ] && \
+	[ -L "$DUAL_HOME/.agents/skills/domain-search" ]; then
+	pass "both targets link the shared skill directory"
+else
+	fail "both targets link the shared skill directory" "one or both host links are missing"
+fi
+assert_eq "the Claude link points at the checkout" "$DS_ROOT_DIR" \
+	"$(cd -P "$DUAL_HOME/.claude/skills/domain-search" 2>/dev/null && pwd)"
+assert_eq "the Codex link points at the checkout" "$DS_ROOT_DIR" \
+	"$(cd -P "$DUAL_HOME/.agents/skills/domain-search" 2>/dev/null && pwd)"
+try env -u CODEX_HOME -u CLAUDE_CONFIG_DIR HOME="$DUAL_HOME" \
+	bash "$DS_ROOT_DIR/install.sh" --target both --uninstall -q
+assert_rc "install.sh uninstalls both targets together" 0 "$RC"
+assert_eq "both target installs are removed" "0" \
+	"$(find "$DUAL_HOME" -type l -name domain-search | wc -l | tr -d ' ')"
 
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" --dry-run
 assert_rc "install.sh --dry-run exits 0" 0 "$RC"
@@ -1746,9 +1830,9 @@ assert_eq "install.sh --dry-run changes nothing" "" "$(ls -A "$SKILLS")"
 try bash "$DS_ROOT_DIR/install.sh" --prefix "$SKILLS" -q
 assert_rc "install.sh installs cleanly" 0 "$RC"
 if [ -L "$SKILLS/domain-search" ]; then
-	pass "install.sh links the whole skill directory for Codex discovery"
+	pass "install.sh links the whole skill directory for agent discovery"
 else
-	fail "install.sh links the whole skill directory for Codex discovery" \
+	fail "install.sh links the whole skill directory for agent discovery" \
 		"the installed skill is not a directory symlink"
 fi
 assert_eq "the linked install points at the checkout" "$DS_ROOT_DIR" \

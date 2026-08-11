@@ -9,8 +9,7 @@ call a name "available" without a real price quote.
 `$domain-search` check and quote requests; nothing in it is staged — those are
 live registry and registrar responses.*
 
-*Original work by [Jon Hammant](https://github.com/jhammant/DomainSaver) with
-Claude. This fork ports the skill to Codex.*
+*Created by [Jon Hammant](https://github.com/jhammant/DomainSaver) with Claude; the same skill now works with both Claude Code and Codex.*
 
 ## Why this exists
 
@@ -160,42 +159,56 @@ premium quotes.
 | `rdap-overrides.tsv`   | Force an endpoint, or force whois — **edit this**        | Written once, never rewritten  |
 | `registry-limits.tsv`  | Per-registry concurrency budgets — **edit this**         | No, hand-maintained seed data  |
 
-### Run DomainSaver with Codex
+### Run DomainSaver with Claude Code or Codex
 
-The scripts answer *"is this name free, and what does it cost?"*. They cannot
-answer *"I need a domain, I don't know what for yet."* — inventing candidates
-with meaning, and reading what a sweep implies, are model work.
+The scripts answer *"is this name free, and what does it cost?"*. They cannot answer *"I need a domain, I don't know what for yet."* — inventing candidates with meaning, and reading what a sweep implies, are model work.
 
-`SKILL.md` packages that half using the
-[Codex skills mechanism](https://developers.openai.com/codex/skills/). It runs
-the search as a funnel: propose naming *directions*, generate hundreds of
-candidates inside whichever the user likes, sweep them safely, cost them on
-renewal price, and quote only the finalists.
+`SKILL.md` packages that half as an open Agent Skill understood by both [Claude Code](https://code.claude.com/docs/en/skills) and [Codex](https://developers.openai.com/codex/skills/). It runs the search as a funnel: propose naming *directions*, generate hundreds of candidates inside whichever the user likes, sweep them safely, cost them on renewal price, and quote only the finalists.
 
-The skill works in the [Codex app](https://developers.openai.com/codex/app/) and
-the [Codex CLI](https://developers.openai.com/codex/cli/). Codex uses your
-ChatGPT account directly, so DomainSaver does not need or store an OpenAI API
-key. Porkbun credentials are separate: they are needed only when the skill
-quotes finalists to distinguish `AVAILABLE`, `PREMIUM` and `RESERVED` names.
-See [Porkbun API key](#porkbun-api-key-optional-strongly-recommended) for the two
-environment variables. Never paste either secret into a Codex prompt. GitHub
-Actions secrets belong to workflow runs and are not automatically available to
-local Codex app or CLI sessions.
+DomainSaver does not need or store an Anthropic or OpenAI API key. Porkbun credentials are separate: they are needed only when the skill quotes finalists to distinguish `AVAILABLE`, `PREMIUM` and `RESERVED` names. See [Porkbun API key](#porkbun-api-key-optional-strongly-recommended) for the two environment variables, and never paste either secret into an agent prompt.
 
 #### Install the skill
 
 Run the installer from the DomainSaver checkout:
 
 ```bash
-./install.sh --dry-run
-./install.sh
+./install.sh                            # install for Claude Code (the default)
+./install.sh --target codex             # install for Codex
+./install.sh --target both              # install for Claude Code and Codex
+./install.sh --dry-run --target both    # preview either installation mode
 ```
 
-By default this creates a symlink at
-`${CODEX_HOME:-$HOME/.codex}/skills/domain-search`. Use `./install.sh --copy`
-instead if the checkout may move, `./install.sh --force` to replace an existing
-installation, or `./install.sh --uninstall` to remove it. Start a new Codex task
-after installing so Codex discovers the skill.
+| Host | Installer selection | Default skill directory | Explicit invocation |
+|---|---|---|---|
+| Claude Code | default or `--target claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/domain-search` | `/domain-search` |
+| Codex | `--target codex` | `$HOME/.agents/skills/domain-search` | `$domain-search` |
+
+When `CODEX_HOME` is explicitly set, the Codex target uses `$CODEX_HOME/skills/domain-search`. DomainSaver 1.1 and earlier installed Codex skills under `$HOME/.codex/skills`; the installer detects an existing installation there and keeps updating it rather than creating a duplicate. To move one to the current location, uninstall and reinstall it explicitly:
+
+```bash
+./install.sh --uninstall --target codex
+./install.sh --target codex
+```
+
+Symlink mode is the default, so `--target both` gives both hosts the same skill files and caches. Use `--copy` if the checkout may move; with `--target both`, copy mode creates two independent snapshots. Use `--force` to replace an existing installation. `--prefix DIR` remains available for one target at a time.
+
+Uninstall with the same target used to install. With no target, uninstall also defaults to Claude Code:
+
+```bash
+./install.sh --uninstall                 # Claude Code
+./install.sh --uninstall --target codex  # Codex
+./install.sh --uninstall --target both   # both hosts
+```
+
+#### Claude Code
+
+Start or restart Claude Code after installation, then invoke the skill directly or let Claude select it from a matching request:
+
+```text
+/domain-search Find and rank short, trustworthy domains for a UK developer tool.
+```
+
+The same skill can activate automatically when a request matches its description.
 
 #### Codex app
 
@@ -262,10 +275,7 @@ variable. Codex may ask you to allow the skill's normal `curl` and `whois`
 commands in an interactive task. A non-interactive environment must already
 permit those network calls.
 
-The CLI is fully usable without it, and the skill is fully usable without a
-Porkbun key; without one, it stops at `UNREGISTERED` and never claims that a name
-is actually available. The next section shows how to run the shell scripts
-directly, without Codex.
+The shell toolkit is fully usable without either agent host, and the skill is fully usable without a Porkbun key; without one, it stops at `UNREGISTERED` and never claims that a name is actually available. The next section shows how to run the shell scripts directly.
 
 ## Quickstart
 
@@ -597,8 +607,7 @@ Please keep to the house constraints, which are deliberate and not accidents of 
   rejected, however convenient it looks.
 - **Never commit credentials**, and never write them to `data/`.
 
-Run `shellcheck scripts/*.sh` before opening a PR. Commit messages follow
-[Conventional Commits](https://www.conventionalcommits.org/).
+Run `shellcheck -x -P scripts -S warning scripts/*.sh tests/*.sh install.sh` and `DS_TEST_SKIP_NETWORK=1 tests/test.sh` before opening a PR. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 Useful additions: more registry whois formats, more `data/registry-limits.tsv` entries,
 support for a second pricing registrar, and more wordlists.

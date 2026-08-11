@@ -8,7 +8,7 @@
 #
 # Requirements:
 #   * Codex CLI installed and signed in with a ChatGPT account.
-#   * The domain-search skill installed with ./install.sh.
+#   * The domain-search skill installed with ./install.sh --target codex.
 #   * PORKBUN_API_KEY / PORKBUN_SECRET_KEY exported for the live quote.
 #
 # Original work by Jon Hammant with Claude:

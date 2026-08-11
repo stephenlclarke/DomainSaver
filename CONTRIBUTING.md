@@ -50,6 +50,8 @@ Add tests next to the section they belong to, using the existing `assert_eq`,
 `assert_contains` and `assert_rc` helpers. Anything needing the network goes in the
 network section, behind the same env var — never in the offline group.
 
+Changes to `SKILL.md` or `install.sh` must remain compatible with both Claude Code and Codex. Claude Code is the installer's default target; tests should also exercise `--target codex` and `--target both`. Keep host-specific discovery paths and invocation syntax in the installation docs rather than forking the skill definition.
+
 Lint before pushing (CI runs the same command):
 
 ```bash
@@ -79,7 +81,7 @@ Keep them focused — one concern per PR. Before opening one:
    handlers vary between shellcheck releases and do not gate the build.)
 2. `tests/test.sh` passes, including the network group if you touched lookup code.
 3. New behaviour has a test; a bug fix has a test that fails without the fix.
-4. Docs updated if you changed a flag, an env var or a data file format.
+4. Docs updated if you changed a flag, an env var, an agent-host integration or a data file format.
 
 For registry behaviour, please say how you observed it — "measured: RDAP hangs above
 one connection" is worth more than a guess, and that is the kind of note
