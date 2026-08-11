@@ -1858,6 +1858,40 @@ assert_rc "install.sh rejects an unknown target" 2 "$RC"
 try bash "$DS_ROOT_DIR/install.sh" --target both --prefix "$SKILLS" --dry-run
 assert_rc "install.sh rejects one prefix for two targets" 2 "$RC"
 
+# Both destinations must be validated before either is changed. The second
+# target deliberately conflicts so these tests fail if processing starts with
+# Claude and only discovers the Codex problem after mutating Claude's install.
+PREFLIGHT_INSTALL_HOME="$TMPDIR_T/preflight-install-home"
+mkdir -p "$PREFLIGHT_INSTALL_HOME/.agents/skills/domain-search"
+printf 'keep me\n' >"$PREFLIGHT_INSTALL_HOME/.agents/skills/domain-search/user-file"
+try env -u CODEX_HOME -u CLAUDE_CONFIG_DIR HOME="$PREFLIGHT_INSTALL_HOME" \
+	bash "$DS_ROOT_DIR/install.sh" --target both -q
+assert_rc "install.sh preflights both install targets" 1 "$RC"
+if [ ! -e "$PREFLIGHT_INSTALL_HOME/.claude/skills/domain-search" ] && \
+	[ ! -h "$PREFLIGHT_INSTALL_HOME/.claude/skills/domain-search" ]; then
+	pass "a Codex install conflict leaves the Claude destination untouched"
+else
+	fail "a Codex install conflict leaves the Claude destination untouched" \
+		"the Claude target was created before Codex was validated"
+fi
+assert_file "preflight preserves the conflicting Codex directory" \
+	"$PREFLIGHT_INSTALL_HOME/.agents/skills/domain-search/user-file"
+
+PREFLIGHT_UNINSTALL_HOME="$TMPDIR_T/preflight-uninstall-home"
+mkdir -p "$PREFLIGHT_UNINSTALL_HOME/.claude/skills" \
+	"$PREFLIGHT_UNINSTALL_HOME/.agents/skills/domain-search"
+ln -s "$DS_ROOT_DIR" "$PREFLIGHT_UNINSTALL_HOME/.claude/skills/domain-search"
+printf 'keep me\n' >"$PREFLIGHT_UNINSTALL_HOME/.agents/skills/domain-search/user-file"
+try env -u CODEX_HOME -u CLAUDE_CONFIG_DIR HOME="$PREFLIGHT_UNINSTALL_HOME" \
+	bash "$DS_ROOT_DIR/install.sh" --target both --uninstall -q
+assert_rc "install.sh preflights both uninstall targets" 1 "$RC"
+if [ -L "$PREFLIGHT_UNINSTALL_HOME/.claude/skills/domain-search" ]; then
+	pass "a Codex uninstall conflict leaves the Claude install untouched"
+else
+	fail "a Codex uninstall conflict leaves the Claude install untouched" \
+		"the Claude link was removed before Codex was validated"
+fi
+
 DUAL_HOME="$TMPDIR_T/dual-home"
 mkdir -p "$DUAL_HOME"
 try env -u CODEX_HOME -u CLAUDE_CONFIG_DIR HOME="$DUAL_HOME" \

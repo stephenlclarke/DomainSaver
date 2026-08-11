@@ -345,6 +345,69 @@ _in_is_ours() {
 		grep -qx 'mode=copy' "$1/$IN_MARKER" 2>/dev/null
 }
 
+# _in_preflight_parent <skills-dir>
+#   Verifies that an existing skills directory is writable, or that its nearest
+#   existing ancestor can create it. No check is needed for a dry run.
+_in_preflight_parent() {
+	local path parent next
+	path="$1"
+	[ "$IN_DRYRUN" = "1" ] && return 0
+
+	if [ -e "$path" ] && [ ! -d "$path" ]; then
+		die "$path exists but is not a directory"
+	fi
+	parent="$path"
+	while [ ! -d "$parent" ]; do
+		next=$(dirname "$parent")
+		[ "$next" != "$parent" ] || break
+		parent="$next"
+	done
+	[ -w "$parent" ] || die "$path cannot be created from unwritable parent $parent"
+	return 0
+}
+
+# _in_preflight_target <target> <source>
+#   Validates one destination without changing it. main checks every selected
+#   target before processing any of them, preventing partial --target both runs.
+_in_preflight_target() {
+	local target source skills dest
+	target="$1"
+	source="$2"
+	skills=$(_in_skills_dir "$target")
+	dest="$skills/$IN_SKILL_NAME"
+
+	case "$IN_ACTION" in
+	install)
+		_in_check_source "$source"
+		_in_preflight_parent "$skills"
+		if [ -e "$dest" ] || [ -h "$dest" ]; then
+			if [ "$IN_FORCE" != "1" ]; then
+				error "$dest already exists."
+				if _in_is_ours "$dest"; then
+					printf '       It looks like an existing DomainSaver install; re-run with --force to replace it.\n' >&2
+				else
+					printf '       It does NOT look like a DomainSaver install, so this script will not touch it.\n' >&2
+					printf '       Move it aside, or re-run with --force if you are sure.\n' >&2
+				fi
+				exit 1
+			fi
+		fi
+		;;
+	uninstall)
+		if [ -e "$dest" ] || [ -h "$dest" ]; then
+			_in_preflight_parent "$skills"
+			if ! _in_is_ours "$dest" && [ "$IN_FORCE" != "1" ]; then
+				error "$dest is not recognisably a DomainSaver install"
+				printf '       (no valid %s marker or DomainSaver skill symlink).\n' "$IN_MARKER" >&2
+				printf '       Refusing to delete it. Re-run with --force if you are sure.\n' >&2
+				exit 1
+			fi
+		fi
+		;;
+	esac
+	return 0
+}
+
 # _in_remove <dest>
 #   Removes an installed skill directory (or a symlink standing in for one).
 _in_remove() {
@@ -406,19 +469,7 @@ _in_do_install() {
 	_ind_dest="$2"
 	_ind_target="$3"
 
-	_in_check_source "$_ind_src"
-
 	if [ -e "$_ind_dest" ] || [ -h "$_ind_dest" ]; then
-		if [ "$IN_FORCE" != "1" ]; then
-			error "$_ind_dest already exists."
-			if _in_is_ours "$_ind_dest"; then
-				printf '       It looks like an existing DomainSaver install; re-run with --force to replace it.\n' >&2
-			else
-				printf '       It does NOT look like a DomainSaver install, so this script will not touch it.\n' >&2
-				printf '       Move it aside, or re-run with --force if you are sure.\n' >&2
-			fi
-			exit 1
-		fi
 		info "replacing existing installation at $_ind_dest"
 		_in_remove "$_ind_dest"
 	fi
@@ -490,13 +541,6 @@ _in_do_uninstall() {
 		return 0
 	fi
 
-	if ! _in_is_ours "$_inu_dest" && [ "$IN_FORCE" != "1" ]; then
-		error "$_inu_dest is not recognisably a DomainSaver install"
-		printf '       (no valid %s marker or DomainSaver skill symlink).\n' "$IN_MARKER" >&2
-		printf '       Refusing to delete it. Re-run with --force if you are sure.\n' >&2
-		exit 1
-	fi
-
 	_in_remove "$_inu_dest"
 	info "removed: $_inu_dest"
 	info "note: caches in the original checkout's data/ were not touched."
@@ -546,6 +590,9 @@ main() {
 	both) targets="claude codex" ;;
 	*) targets="$IN_TARGET" ;;
 	esac
+	for target in $targets; do
+		_in_preflight_target "$target" "$source_dir"
+	done
 	for target in $targets; do
 		_in_process_target "$target" "$source_dir"
 	done
