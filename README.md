@@ -582,8 +582,7 @@ Read these before you trust a result.
   `.uk` names found that way turned out to be registered.
 - **ASCII only.** Internationalised names must be punycoded (`xn--…`) before you feed
   them in; silently guessing the conversion would be worse than refusing.
-- **No public-suffix awareness.** Multi-label suffixes like `co.uk` work, but flags and
-  routing key off the final label.
+- **Limited public-suffix awareness.** Multi-label suffixes like `co.uk` work, and pricing prefers the matching two-label entry when one exists. Registry routing and reputation flags still key off the final registry TLD; deeper suffixes are not inferred.
 - **`ERROR` is not an answer.** It means rate-limited, timed out, or unparseable.
   Re-run those names; the tool will never convert one into a status.
 

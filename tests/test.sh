@@ -613,6 +613,7 @@ awk 'BEGIN {
 	printf ",\"top\":{\"registration\":\"4.63\",\"renewal\":\"4.63\",\"transfer\":\"4.63\"}"
 	printf ",\"online\":{\"registration\":\"2.24\",\"renewal\":\"29.00\",\"transfer\":\"29.00\"}"
 	printf ",\"uk\":{\"registration\":\"8.06\",\"renewal\":\"8.06\",\"transfer\":\"8.06\"}"
+	printf ",\"co.uk\":{\"registration\":\"3.00\",\"renewal\":\"4.00\",\"transfer\":\"3.00\"}"
 	for (i = 1; i <= 900; i++)
 		printf ",\"t%04d\":{\"registration\":\"5.00\",\"renewal\":\"7.00\",\"transfer\":\"5.00\"}", i
 	printf "}}"
@@ -1448,6 +1449,16 @@ assert_eq "bootstrap seeds .co as whois.registry.co" "whois.registry.co" \
 assert_eq "bootstrap seeds .io so lib.sh can read it back" "whois.nic.io" \
 	"$(lib_eval_in "$BS_DATA" 'ds_whois_server io')"
 
+# price-join receives the registry TLD from sweep.sh, but registrars can price
+# a longer suffix independently. It must use co.uk's price while retaining uk's
+# registry-level reputation flags.
+printf 'UNREGISTERED\tshortlist.co.uk\tuk\t-\t1\trdap:404\n' >"$TMPDIR_T/co-uk-sweep.tsv"
+try env DS_DATA_DIR="$BS_DATA" bash "$SCRIPTS_DIR/price-join.sh" --no-sort \
+	"$TMPDIR_T/co-uk-sweep.tsv"
+assert_rc "price-join.sh handles a multi-label priced suffix" 0 "$RC"
+assert_eq "price-join.sh prefers co.uk pricing over uk pricing" \
+	$'shortlist.co.uk\t3.00\t4.00\tNO_PREMIUM_REGISTRY' "$OUT"
+
 # lib.sh must still refuse the poisoned endpoints the bootstrap file contains.
 lib_eval_in "$BS_DATA" 'ds_rdap_endpoint zzz >/dev/null'
 assert_rc "a bootstrapped rdap.org endpoint is still refused" 1 "$?"
@@ -1551,6 +1562,17 @@ cat >"$QFIX/trap.bar.json" <<'EOF'
 "limits":{"TTL":10,"limit":1},"ttlRemaining":0}
 EOF
 
+# Porkbun prices co.uk independently from bare uk. The fixture price table has
+# no uk row, so this quote is only recognised as premium when the registrable
+# two-label suffix supplies the correct standard-price baseline.
+cat >"$QFIX/priced.co.uk.json" <<'EOF'
+{"status":"SUCCESS","response":{"avail":"yes","type":"registration","price":"30.00",
+"regularPrice":"30.00","firstYearPromo":"no","premium":"no","minDuration":1,
+"additional":{"renewal":{"price":"40.00","regularPrice":"40.00"},
+"transfer":{"price":"30.00","regularPrice":"30.00"}}},
+"limits":{"TTL":10,"limit":1},"ttlRemaining":0}
+EOF
+
 cat >"$QFIX/sold.link.json" <<'EOF'
 {"status":"SUCCESS","response":{"avail":"no","type":"registration","price":"7.72",
 "regularPrice":"7.72","firstYearPromo":"no","premium":"no","minDuration":1,
@@ -1582,7 +1604,7 @@ quote() { # quote <args...>  - fixtures, no credentials, no network
 		bash "$SCRIPTS_DIR/quote.sh" -o tsv --probe never "$@"
 }
 
-quote shed.link plainname.link flagged.link noprice.link trap.bar sold.link
+quote shed.link plainname.link flagged.link noprice.link trap.bar priced.co.uk sold.link
 assert_rc "quote.sh exits 0 when every name got a verdict" 0 "$RC"
 
 assert_eq "a name quoted at 106x its list price is PREMIUM, not AVAILABLE" \
@@ -1602,6 +1624,12 @@ assert_eq "a cheap first year with a 5x renewal is PREMIUM (renewal decides)" \
 	"PREMIUM" "$(col 2 trap.bar "$OUT")"
 assert_contains "and the first-year promotion is called out" "FIRST_YEAR_PROMO" \
 	"$(col 10 trap.bar "$OUT")"
+assert_eq "a co.uk quote uses the co.uk list-price baseline" \
+	"PREMIUM" "$(col 2 priced.co.uk "$OUT")"
+assert_eq "the co.uk renewal baseline is not looked up as bare uk" \
+	"9.42" "$(col 7 priced.co.uk "$OUT")"
+assert_contains "the multi-label quote records its price comparison" "PRICE_OVER_LIST" \
+	"$(col 10 priced.co.uk "$OUT")"
 assert_eq "an unsellable name with --probe never is UNAVAILABLE" \
 	"UNAVAILABLE" "$(col 2 sold.link "$OUT")"
 assert_eq "an unsellable name carries no quoted price" "-" "$(col 3 sold.link "$OUT")"
