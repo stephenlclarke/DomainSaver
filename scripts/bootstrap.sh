@@ -535,7 +535,6 @@ _bs_write_templates_and_aliases() {
 			printf '#\n'
 			printf '# Examples (uncomment to use):\n'
 			printf '# app\thttps://pubapi.registry.google/rdap\n'
-			printf '# info\tWHOIS\n'
 		} >"$_bso_tmp"
 		_bs_install_file "$_bso_tmp" "$DS_RDAP_OVERRIDES_TSV"
 		ds_log "      wrote template $DS_RDAP_OVERRIDES_TSV"

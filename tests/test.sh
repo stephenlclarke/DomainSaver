@@ -1448,6 +1448,8 @@ assert_file "bootstrap.sh builds the price table" "$BS_DATA/tld-prices.tsv"
 assert_file "bootstrap.sh seeds the whois server table" "$BS_DATA/whois-servers.tsv"
 assert_file "bootstrap.sh seeds the reputation table" "$BS_DATA/tld-flags.tsv"
 assert_file "bootstrap.sh writes the overrides template" "$BS_DATA/rdap-overrides.tsv"
+assert_not_contains "the overrides template does not divert RDAP-only .info to WHOIS" \
+	$'info\tWHOIS' "$(cat "$BS_DATA/rdap-overrides.tsv")"
 
 assert_ge "the RDAP index has a sane row count (>=1000 TLDs)" 1000 "$(rows "$BS_DATA/rdap-endpoints.tsv")"
 assert_ge "the price table has a sane row count (>=500 TLDs)" 500 "$(rows "$BS_DATA/tld-prices.tsv")"
