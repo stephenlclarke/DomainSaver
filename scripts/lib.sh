@@ -762,8 +762,12 @@ ds_probe_whois() {
 		fi
 	fi
 
-	_dpw_out=$(_ds_timeout "$DS_WHOIS_TIMEOUT" whois -h "$_dpw_srv" "$_dpw_dom" 2>/dev/null)
-	_dpw_rc=$?
+	# A failed whois process is an expected lookup outcome, not a fatal shell
+	# error. Capture its status explicitly so callers running under `set -e`
+	# still receive the promised ERROR record below.
+	_dpw_out=""
+	_dpw_rc=0
+	_dpw_out=$(_ds_timeout "$DS_WHOIS_TIMEOUT" whois -h "$_dpw_srv" "$_dpw_dom" 2>/dev/null) || _dpw_rc=$?
 
 	if [ "$_dpw_rc" = "124" ]; then
 		printf 'ERROR|%s|%s\n' "$_dpw_dom" "whois:$_dpw_srv timeout after ${DS_WHOIS_TIMEOUT}s"

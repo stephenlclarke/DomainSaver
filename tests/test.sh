@@ -757,6 +757,16 @@ assert_contains "the pure-bash watchdog kills promptly, not after 20s" "prompt=y
 assert_contains "the watchdog passes a command's stdout through" "passthrough_out=hello" "$OUT"
 assert_contains "the watchdog passes a command's exit status through" "status_rc=7" "$OUT"
 
+# A nonzero whois process must still produce the library's machine-readable
+# ERROR record when its caller enables errexit. Without this, the assignment
+# that captures whois output terminates the shell before ds_probe_whois can
+# report the failed lookup.
+try bash -c 'set -e; . "$1"; whois() { return 1; }; ds_probe_whois example.co whois.invalid' \
+	_ "$LIB_SH"
+assert_rc "whois process failure exits as an ERROR result" 1 "$RC"
+assert_contains "whois process failure emits an ERROR record under errexit" \
+	"ERROR|example.co|whois:whois.invalid empty response" "$OUT"
+
 section "lib.sh: registry routing rules"
 
 # Rule 3: Google Registry TLDs go to pubapi, never to the throttled bootstrap
