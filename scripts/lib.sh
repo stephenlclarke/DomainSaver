@@ -454,6 +454,11 @@ ds_rdap_endpoint() {
 			return 1
 			;;
 		esac
+		_dre_host=$(_ds_url_host "$_dre_ov")
+		if grep -qiE "$_DS_RDAP_HOST_BANNED_RE" <<<"$_dre_host"; then
+			ds_debug "rdap[$_dre_tld]: refusing banned override host $_dre_host, use whois"
+			return 1
+		fi
 		printf '%s\n' "${_dre_ov%/}"
 		return 0
 	fi

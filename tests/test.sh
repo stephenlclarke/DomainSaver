@@ -829,12 +829,15 @@ mkdir -p "$TMPDIR_T/ovr-data"
 	printf '# tld\turl\n'
 	printf 'app\thttps://rdap.override.test/rdap\n'
 	printf 'com\tWHOIS\n'
+	printf 'proxytest\thttps://sub.rdap.org/rdap\n'
 } >"$TMPDIR_T/ovr-data/rdap-overrides.tsv"
 assert_eq "rdap-overrides.tsv overrides even the Google routing rule" \
 	"https://rdap.override.test/rdap" \
 	"$(lib_eval_in "$TMPDIR_T/ovr-data" 'ds_rdap_endpoint app')"
 lib_eval_in "$TMPDIR_T/ovr-data" 'ds_rdap_endpoint com >/dev/null'
 assert_rc "rdap-overrides.tsv can force a TLD onto whois" 1 "$?"
+lib_eval_in "$TMPDIR_T/ovr-data" 'ds_rdap_endpoint proxytest >/dev/null'
+assert_rc "an override cannot bypass the banned RDAP proxy guard" 1 "$?"
 
 # The regression this project keeps re-learning: .co is whois.registry.co.
 assert_eq "ds_whois_server co is whois.registry.co, NOT whois.nic.co" \
