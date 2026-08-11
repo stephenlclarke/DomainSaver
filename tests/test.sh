@@ -787,7 +787,7 @@ assert_contains "the fallback result preserves both probe details" \
 
 section "lib.sh: registry routing rules"
 
-# Rule 3: Google Registry TLDs go to pubapi, never to the throttled bootstrap
+# Priority 2: Google Registry TLDs go to pubapi, never to the throttled bootstrap
 # endpoint. Asserted with an EMPTY cache, so it can only come from the rule.
 assert_eq "Google Registry TLDs route to pubapi.registry.google" \
 	"https://pubapi.registry.google/rdap" \
@@ -796,7 +796,7 @@ assert_eq ".foo also routes to pubapi.registry.google" \
 	"https://pubapi.registry.google/rdap" \
 	"$(lib_eval_in "$TMPDIR_T/empty-data" 'ds_rdap_endpoint foo')"
 
-# Rule 5: TLDs with no RDAP must report "use whois" (exit 1, nothing printed).
+# Priority 3: TLDs with no RDAP report "use whois" (exit 1, nothing printed).
 for t in io co me sh gg de nz; do
 	out=$(lib_eval_in "$TMPDIR_T/empty-data" "ds_rdap_endpoint $t")
 	rc=$?
@@ -807,7 +807,7 @@ for t in io co me sh gg de nz; do
 	fi
 done
 
-# Rule 4: Identity Digital throttles brutally, but its gTLDs are RDAP-ONLY.
+# Identity Digital throttles brutally, but its gTLDs are RDAP-ONLY.
 # ICANN sunset the WHOIS requirement for gTLDs, so IANA returns an empty
 # "whois:" line for them and diverting to whois can only ever produce ERROR.
 # Regression: betalab.fyi reported ERROR because .fyi was denied RDAP and has
@@ -819,7 +819,7 @@ ID_OUT=$(lib_eval_in "$TMPDIR_T/slow-data" 'ds_rdap_endpoint idtest')
 assert_rc "an Identity Digital endpoint is returned, not refused (RDAP-only registry)" 0 "$?"
 assert_contains "  and it is the Identity Digital endpoint" "identitydigital" "$ID_OUT"
 
-# Rule 2: the rdap.org proxy 429s after ~60 requests. THAT one is refused
+# The rdap.org proxy 429s after ~60 requests. THAT one is refused
 # outright, even if a bootstrap file or an override hands it to us. (The index
 # lives in slow-data, which exists: pointing this at a directory that does not
 # exist would make the test pass for the wrong reason - a missing index also
@@ -837,7 +837,7 @@ assert_eq "a host that merely looks like rdap.org is not banned" \
 	"https://rdap.orgtld.example/rdap" \
 	"$(lib_eval_in "$TMPDIR_T/slow-data" 'ds_rdap_endpoint proxytest')"
 
-# Rule 1: the override file wins over everything, in both directions.
+# Priority 1: the override file wins over everything, in both directions.
 mkdir -p "$TMPDIR_T/ovr-data"
 {
 	printf '# tld\turl\n'
@@ -1818,6 +1818,10 @@ assert_contains "install.sh --help documents both invocation forms" \
 	'Codex:        $domain-search' "$OUT"
 assert_contains "install.sh --help documents the Codex path override" \
 	"CODEX_HOME" "$OUT"
+assert_not_contains "install.sh does not claim slow RDAP registries require WHOIS" \
+	"all Identity Digital TLDs" "$(cat "$DS_ROOT_DIR/install.sh")"
+assert_contains "install.sh identifies representative no-RDAP dependencies" \
+	"no-RDAP TLDs such as .io, .co, .me and .de" "$(cat "$DS_ROOT_DIR/install.sh")"
 
 INSTALL_ALIAS="$TMPDIR_T/domainsaver-install"
 ln -s "$DS_ROOT_DIR/install.sh" "$INSTALL_ALIAS"

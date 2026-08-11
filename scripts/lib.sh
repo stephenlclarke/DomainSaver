@@ -431,8 +431,8 @@ _ds_tsv_lookup() {
 #     1. data/rdap-overrides.tsv  (user/bootstrap supplied; wins over all)
 #     2. Google Registry TLDs     -> https://pubapi.registry.google/rdap
 #     3. Known no-RDAP TLDs       -> whois
-#     4. Known Identity Digital   -> whois
-#     5. IANA bootstrap index, rejecting rdap.org and Identity Digital hosts
+#     4. IANA bootstrap index, rejecting banned proxy hosts and flagging slow
+#        registries so callers can throttle them
 #   Args:   $1 = TLD, with or without leading dot, any case.
 #   Stdout: the RDAP base URL with no trailing slash (e.g.
 #           "https://pubapi.registry.google/rdap"), and nothing else.

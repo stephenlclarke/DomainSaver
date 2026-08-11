@@ -320,7 +320,7 @@ _in_check_deps() {
 		*jq*) warning "  jq is required by bootstrap.sh, quote.sh and RDAP response validation" ;;
 		esac
 		case "$_ind_missing" in
-		*whois*) warning "  whois is required for .io/.co/.uk and all Identity Digital TLDs" ;;
+		*whois*) warning "  whois is required for no-RDAP TLDs such as .io, .co, .me and .de" ;;
 		esac
 		case "$_ind_missing" in
 		*curl*) warning "  curl is required for every RDAP lookup" ;;
