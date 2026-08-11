@@ -154,7 +154,7 @@ Output is `domain, standard_registration, standard_renewal, flags`.
 money is, expressed as USD per year:
 
 | TLD | Year one | Renews at | Multiple |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `.bar` | 2.57 | 52.01 | 20x |
 | `.codes` | 4.63 | 57.16 | 12x |
 | `.online` / `.site` / `.space` | ~1.96 | 26.26–28.84 | ~15x |
@@ -219,7 +219,7 @@ Practical consequences worth stating:
 ## What each step costs
 
 | Step | Cost | Scale |
-|---|---|---|
+| --- | --- | --- |
 | Generate | free, offline | unlimited |
 | Price-join | free, offline | unlimited |
 | `check.sh` | 1 registry query/name | up to ~25 |
