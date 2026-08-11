@@ -190,7 +190,7 @@ When `CODEX_HOME` is explicitly set, the Codex target uses `$CODEX_HOME/skills/d
 ./install.sh --target codex
 ```
 
-Symlink mode is the default, so `--target both` gives both hosts the same skill files and caches. Use `--copy` if the checkout may move; with `--target both`, copy mode creates two independent snapshots. Use `--force` to replace an existing installation. `--prefix DIR` remains available for one target at a time.
+Symlink mode is the default, so `--target both` gives both hosts the same skill files and caches. Use `--copy` if the checkout may move; with `--target both`, copy mode creates two independent snapshots. Each host resolves the copy it loaded: Claude Code supplies `${CLAUDE_SKILL_DIR}`, while Codex exposes the loaded `SKILL.md` path to the agent. Use `--force` to replace an existing installation. `--prefix DIR` remains available for one target at a time; direct shell use from a custom prefix can set `DOMAINSAVER_HOME=DIR/domain-search`.
 
 Uninstall with the same target used to install. With no target, uninstall also defaults to Claude Code:
 
