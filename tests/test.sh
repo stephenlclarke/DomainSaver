@@ -439,10 +439,13 @@ case "$url" in
 		# 200 carrying an RDAP error object: absent, despite the status line.
 		emit 200 '{"errorCode":404,"title":"Not Found"}'
 		;;
-	*servfail*)
-		emit 200 '{"errorCode":500,"title":"Internal Server Error"}'
-		;;
-	*taken* | google.*)
+		*servfail*)
+			emit 200 '{"errorCode":500,"title":"Internal Server Error"}'
+			;;
+		*malformed*)
+			emit 200 '<html>upstream proxy error</html>'
+			;;
+		*taken* | google.*)
 		emit 200 '{"objectClassName":"domain","ldhName":"'"$name"'","entities":[{"roles":["registrar"],"vcardArray":["vcard",[["version",{},"text","4.0"],["fn",{},"text","Stub Registrar Inc."]]]}]}'
 		;;
 	*)
@@ -1212,6 +1215,16 @@ assert_eq "a registered name under it resolves too" "REGISTERED" "$(col 2 taken-
 ck -q --no-price softfree-name.com
 assert_eq "an RDAP 200 with errorCode 404 is UNREGISTERED" "UNREGISTERED" \
 	"$(col 2 softfree-name.com "$OUT")"
+
+# A transport-successful response is still not an answer unless its body is a
+# valid RDAP domain object. Captive portals and broken proxies commonly return
+# HTML with HTTP 200, which must remain ERROR rather than becoming REGISTERED.
+try env PATH="$STUB_PATH" DS_DATA_DIR="$E2E_DATA" DS_TEST_FIXTURES="$FIX" \
+	DS_RDAP_RETRIES=1 bash -c '. "$1"; ds_probe_rdap malformed-body.com "$2"' \
+	_ "$LIB_SH" "https://rdap.verisign.test/com/v1"
+assert_rc "a malformed RDAP 200 response exits as ERROR" 1 "$RC"
+assert_contains "a malformed RDAP 200 response is never REGISTERED" \
+	"ERROR|malformed-body.com|rdap:200 invalid RDAP response" "$OUT"
 
 # A throttled registry is not an answer. It must fall back to whois rather than
 # be reported as fact - and the fallback must be visible in the detail.

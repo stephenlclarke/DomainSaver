@@ -115,7 +115,8 @@ brew install jq whois
 sudo apt-get install -y curl jq whois
 ```
 
-`jq` is required by `bootstrap.sh`, `quote.sh` and `check.sh --json`. `whois` is
+`jq` is required by `bootstrap.sh`, `quote.sh`, `check.sh --json`, and to validate
+successful RDAP responses before treating them as registered. `whois` is
 required for the ~18 TLDs with no RDAP service at all — `.io`, `.co`, `.me`, `.de`,
 `.ch` and friends. Everything else, `.uk` and the Identity Digital TLDs included, goes
 over RDAP. Note that `dig` is **not** used — see [Limitations](#limitations).

@@ -317,7 +317,7 @@ _in_check_deps() {
 	if [ -n "$_ind_missing" ]; then
 		warning "not on PATH:$_ind_missing"
 		case "$_ind_missing" in
-		*jq*) warning "  jq is required by bootstrap.sh and quote.sh" ;;
+		*jq*) warning "  jq is required by bootstrap.sh, quote.sh and RDAP response validation" ;;
 		esac
 		case "$_ind_missing" in
 		*whois*) warning "  whois is required for .io/.co/.uk and all Identity Digital TLDs" ;;

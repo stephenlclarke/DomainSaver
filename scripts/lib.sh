@@ -666,31 +666,50 @@ ds_probe_rdap() {
 	case "$_dpr_code" in
 	200)
 		# Some registries answer 200 with an RDAP error object rather than an
-		# HTTP error status, so trust the body over the status line.
-		_dpr_ec=""
-		if _ds_have jq; then
-			_dpr_ec=$(jq -r '.errorCode // empty' "$_dpr_body" 2>/dev/null) || _dpr_ec=""
+		# HTTP error status, so validate the body instead of trusting the status
+		# line. A malformed 200 response is not evidence of registration.
+		_dpr_shape="invalid"
+		if ! _ds_have jq; then
+			_dpr_detail="rdap:200 cannot validate response (jq not installed)"
+		elif ! _dpr_shape=$(jq -r '
+			if type != "object" then "invalid"
+			elif .errorCode? != null then "error:" + (.errorCode | tostring)
+			elif .objectClassName? == "domain" and
+				([.ldhName?, .unicodeName?] |
+				 map(select(type == "string" and length > 0)) | length > 0)
+			then "domain"
+			else "invalid"
+			end
+		' "$_dpr_body" 2>/dev/null); then
+			_dpr_shape="invalid"
 		fi
-		if [ "$_dpr_ec" = "404" ]; then
+
+		case "$_dpr_shape" in
+		error:404)
 			_dpr_status="UNREGISTERED"
 			_dpr_detail="rdap:200 errorCode=404"
 			_dpr_rc=0
-		elif [ -n "$_dpr_ec" ]; then
+			;;
+		error:*)
 			_dpr_status="ERROR"
-			_dpr_detail="rdap:200 errorCode=$_dpr_ec"
+			_dpr_detail="rdap:200 errorCode=${_dpr_shape#error:}"
 			_dpr_rc=1
-		else
+			;;
+		domain)
 			_dpr_status="REGISTERED"
 			_dpr_detail="rdap:200"
-			if _ds_have jq; then
-				_dpr_reg=$(jq -r '
-					[ .entities[]? | select(any(.roles[]?; . == "registrar"))
-					  | .vcardArray[1][]? | select(.[0] == "fn") | .[3] ][0] // empty
-				' "$_dpr_body" 2>/dev/null) || _dpr_reg=""
-				[ -n "$_dpr_reg" ] && _dpr_detail="rdap:200 registrar=$_dpr_reg"
-			fi
+			_dpr_reg=$(jq -r '
+				[ .entities[]? | select(any(.roles[]?; . == "registrar"))
+				  | .vcardArray[1][]? | select(.[0] == "fn") | .[3] ][0] // empty
+			' "$_dpr_body" 2>/dev/null) || _dpr_reg=""
+			[ -n "$_dpr_reg" ] && _dpr_detail="rdap:200 registrar=$_dpr_reg"
 			_dpr_rc=0
-		fi
+			;;
+		invalid)
+			[ "$_dpr_detail" != "rdap:200" ] ||
+				_dpr_detail="rdap:200 invalid RDAP response"
+			;;
+		esac
 		;;
 	404)
 		# The load-bearing case. Absent from the registry: available, RESERVED
@@ -710,7 +729,7 @@ ds_probe_rdap() {
 	rm -f "$_dpr_body"
 	printf '%s|%s|%s\n' "$_dpr_status" "$_dpr_dom" "$(_ds_sanitize_detail "$_dpr_detail")"
 	unset _dpr_dom _dpr_base _dpr_tld _dpr_url _dpr_body _dpr_attempt \
-		_dpr_code _dpr_sleep _dpr_status _dpr_detail _dpr_ec _dpr_reg 2>/dev/null || true
+		_dpr_code _dpr_sleep _dpr_status _dpr_detail _dpr_shape _dpr_reg 2>/dev/null || true
 	return "$_dpr_rc"
 }
 
