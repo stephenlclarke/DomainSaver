@@ -70,7 +70,10 @@ Write the interesting labels yourself, then expand mechanically. Aim for
 about 10% in `.com` and 80% in `.uk`, so a 20-name list mostly returns nothing.
 
 ```bash
+# Set DOMAINSAVER_HOME to the skill directory loaded by your current agent.
+# Codex default: ~/.agents/skills/domain-search; Claude: ~/.claude/skills/domain-search.
 DS="${DOMAINSAVER_HOME:-$HOME/.claude/skills/domain-search}"
+[ -f "$DS/SKILL.md" ] || DS="$HOME/.agents/skills/domain-search"
 
 # your own labels, crossed with plausible TLDs
 printf 'shed\nloft\nyard\nattic\ndepot\n' \

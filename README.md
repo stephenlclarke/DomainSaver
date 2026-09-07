@@ -522,3 +522,17 @@ MIT. See [LICENSE](LICENSE).
 DomainSaver is not affiliated with Porkbun, IANA, or any registry. It uses Porkbun's
 public pricing API and, optionally, your own Porkbun API key. Respect registry rate
 limits: the defaults here are conservative on purpose.
+
+## Codex
+
+Install the same toolkit into Codex's shared skills directory:
+
+```bash
+./install.sh --prefix "$HOME/.agents/skills"
+```
+
+The installer retains its existing collision checks; inspect any existing
+installation before replacing it. Start a new Codex conversation and invoke
+`$domain-search`. Resolve `DS` to the installed skill directory (normally
+`$HOME/.agents/skills/domain-search`); the scripts, caches and quote credentials
+are the same as for Claude Code. No separate copy of the search workflow is needed.
